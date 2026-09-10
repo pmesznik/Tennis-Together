@@ -1,0 +1,88 @@
+name: Build Android APK
+
+# Buduje podpisany plik APK i dołącza go do GitHub Release (historia wersji,
+# widoczna dla współpracowników repo — zakładka Releases). Publikację
+# publiczną (strona do ściągania APK) dodamy, gdy będzie potrzebna — patrz
+# wzorzec w projekcie "NOWA APLIKACJA PZT ANDROID".
+#
+# Wymaga sekretów (Settings → Secrets and variables → Actions):
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
+#   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
+# Bez nich ten workflow się nie powiedzie — dopóki nie ma klucza podpisującego,
+# budujemy i testujemy lokalnie (npx cap run android) albo uruchamiamy
+# workflow_dispatch ręcznie po dodaniu sekretów.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v7
+
+      - name: Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Java (JDK 21)
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Instalacja zależności
+        run: npm ci
+
+      - name: Build web (Vite)
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+
+      - name: Sync Capacitor → Android
+        run: npx cap sync android
+
+      - name: Odtwórz klucz podpisujący z sekretów
+        working-directory: android/app
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > tennis-together-release.keystore
+          cat > keystore.properties <<EOF
+          storeFile=tennis-together-release.keystore
+          storePassword=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.ANDROID_KEY_ALIAS }}
+          keyPassword=${{ secrets.ANDROID_KEY_PASSWORD }}
+          EOF
+
+      - name: Build APK (release, podpisany)
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon -PappVersionCode=${{ github.run_number }} -PappVersionName="0.1.${{ github.run_number }}"
+
+      - name: Nazwij plik z numerem wersji
+        run: |
+          mv android/app/build/outputs/apk/release/app-release.apk \
+             "android/app/build/outputs/apk/release/tennis-together-v${{ github.run_number }}.apk"
+
+      - name: Udostępnij APK (artifact przebiegu)
+        uses: actions/upload-artifact@v7
+        with:
+          name: tennis-together-v${{ github.run_number }}
+          path: android/app/build/outputs/apk/release/tennis-together-v${{ github.run_number }}.apk
+          if-no-files-found: error
+
+      - name: Dołącz APK do GitHub Release (historia wersji)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: "Wersja ${{ github.run_number }}"
+          files: android/app/build/outputs/apk/release/tennis-together-v${{ github.run_number }}.apk
+          make_latest: true
