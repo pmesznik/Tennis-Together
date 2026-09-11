@@ -7,6 +7,8 @@ import LodgingPage from "./pages/LodgingPage.jsx";
 import TripsPage from "./pages/TripsPage.jsx";
 import MessagesPage from "./pages/MessagesPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import AuthPage from "./pages/AuthPage.jsx";
+import { useAuth } from "./lib/AuthContext.jsx";
 
 // Szkielet głównego menu z dokumentu założeń (Start / Turnieje / Przejazdy /
 // Noclegi / Moje wyjazdy / Wiadomości / Profil). Każda zakładka na razie to
@@ -41,6 +43,27 @@ function useTheme() {
 
 export default function App() {
   const [theme, setTheme] = useTheme();
+  const { session, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          color: "var(--color-text-muted)",
+        }}
+      >
+        Wczytywanie…
+      </div>
+    );
+  }
+
+  if (!session) {
+    return <AuthPage />;
+  }
 
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>

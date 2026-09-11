@@ -1,5 +1,13 @@
 import { useState } from "react";
 import { MOCK_PARENT_PROFILE, MOCK_PLAYER_PROFILE } from "../mockData.js";
+import { useAuth } from "../lib/AuthContext.jsx";
+
+const ROLE_LABELS = {
+  parent: "Rodzic",
+  guardian: "Opiekun",
+  coach: "Trener / klub",
+  player_adult: "Zawodnik (16+)",
+};
 
 export default function ProfilePage() {
   const [view, setView] = useState("parent"); // "parent" | "player"
@@ -26,27 +34,38 @@ export default function ProfilePage() {
 }
 
 function ParentProfile() {
-  const p = MOCK_PARENT_PROFILE;
+  const { account, user, signOut } = useAuth();
+  // Zgody i historia wyjazdów nie są jeszcze podłączone pod `consents`/`trips`
+  // (patrz PLAN.md, "Następne kroki") — na razie dane przykładowe, reszta
+  // karty (imię, rola, e-mail, wylogowanie) jest już prawdziwa.
+  const mock = MOCK_PARENT_PROFILE;
+  const displayName = account?.full_name || user?.email || "…";
+
   return (
     <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <div className="avatar-circle" style={{ width: 48, height: 48, fontSize: 16 }}>
-          {p.fullName[0]}
+          {displayName[0]?.toUpperCase()}
         </div>
         <div>
-          <p style={{ margin: 0, fontWeight: 700 }}>{p.fullName}</p>
-          {p.verified && <span className="badge-verified">🛡️ Parent Verified</span>}
+          <p style={{ margin: 0, fontWeight: 700 }}>{displayName}</p>
+          <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>
+            {account ? ROLE_LABELS[account.role] ?? account.role : "…"}
+          </p>
+          {account?.verified && <span className="badge-verified">🛡️ Parent Verified</span>}
         </div>
       </div>
 
       <div>
-        <p style={{ margin: "0 0 6px", fontSize: 13, color: "var(--color-text-muted)" }}>Telefon</p>
-        <p style={{ margin: 0 }}>{p.phone}</p>
+        <p style={{ margin: "0 0 6px", fontSize: 13, color: "var(--color-text-muted)" }}>E-mail</p>
+        <p style={{ margin: 0 }}>{user?.email}</p>
       </div>
 
       <div>
-        <p style={{ margin: "0 0 6px", fontSize: 13, color: "var(--color-text-muted)" }}>Zgody</p>
-        {p.consents.map((c) => (
+        <p style={{ margin: "0 0 6px", fontSize: 13, color: "var(--color-text-muted)" }}>
+          Zgody <span style={{ opacity: 0.6 }}>(przykładowe — jeszcze nie z bazy)</span>
+        </p>
+        {mock.consents.map((c) => (
           <div key={c.type} style={{ display: "flex", justifyContent: "space-between", fontSize: 13, marginBottom: 4 }}>
             <span>{c.type}</span>
             <span className="status-pill ok">udzielona {c.date}</span>
@@ -56,19 +75,24 @@ function ParentProfile() {
 
       <div>
         <p style={{ margin: "0 0 6px", fontSize: 13, color: "var(--color-text-muted)" }}>
-          Historia wyjazdów
+          Historia wyjazdów <span style={{ opacity: 0.6 }}>(przykładowe)</span>
         </p>
-        <p style={{ margin: 0 }}>{p.completedTrips} zakończone wyjazdy</p>
+        <p style={{ margin: 0 }}>{mock.completedTrips} zakończone wyjazdy</p>
       </div>
 
-      <button className="btn-ghost" style={{ alignSelf: "flex-start" }}>
-        Edytuj profil
-      </button>
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="btn-ghost">Edytuj profil</button>
+        <button className="btn-ghost" onClick={signOut}>
+          Wyloguj
+        </button>
+      </div>
     </div>
   );
 }
 
 function PlayerProfile() {
+  // Cała karta jest jeszcze na danych przykładowych — profile zawodników
+  // (tabela `players`) nie mają jeszcze ekranu dodawania, patrz PLAN.md.
   const p = MOCK_PLAYER_PROFILE;
   return (
     <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>

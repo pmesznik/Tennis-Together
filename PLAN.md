@@ -157,13 +157,46 @@ model biznesowy (z dokumentu założeń, sekcje 19–21).
 - kolejka zgłoszeń z czasem reakcji, filtr słów w czacie
 - akceptacja regulaminu i zgody rodzica zapisane z datą (`consents`)
 
+## Stan Supabase (2026-09-11)
+
+- Projekt `tennis-together` utworzony, region Frankfurt, plan Free.
+- `supabase/migrations/0001_init.sql` uruchomiony — wszystkie 12 tabel
+  istnieje i odpowiada przez REST API (zweryfikowane).
+- `.env` lokalnie uzupełniony (`VITE_SUPABASE_URL` + nowy format klucza
+  `sb_publishable_...`, obsługiwany przez `@supabase/supabase-js@^2.49`).
+- Logowanie/rejestracja działają end-to-end: `src/lib/AuthContext.jsx` +
+  `src/pages/AuthPage.jsx`. Cała appka jest teraz zabramkowana — bez sesji
+  widać ekran logowania zamiast zakładek.
+- Rejestracja tworzy wiersz w `accounts` **dopiero po pierwszym
+  zalogowaniu**, bo projekt ma domyślnie włączone "Confirm email" (Auth →
+  Providers → Email) — dane z formularza (rola, imię) czekają w tym czasie
+  w `localStorage`. Do szybszego testowania na dev można wyłączyć "Confirm
+  email" w tych ustawieniach; **trzeba je z powrotem włączyć przed betą**
+  (bez tego ktoś mógłby zakładać konta na cudzy e-mail).
+- Profil rodzica (`ProfilePage.jsx`) pokazuje już prawdziwe imię/rolę/e-mail
+  z bazy i ma działające „Wyloguj”. Zgody i historia wyjazdów są nadal
+  danymi przykładowymi — `consents`/`trips` jeszcze nie podłączone.
+- Profil zawodnika jest nadal w całości na danych przykładowych — nie ma
+  jeszcze ekranu dodawania zawodnika (`players`).
+- RLS nadal włączone tylko na `players` — pozostałe tabele (w tym
+  `accounts`) są otwarte przez anon key. To świadomy dług na czas
+  budowy, ale pozycja z checklisty niżej ("RLS uzupełnione na każdej
+  tabeli") musi zniknąć przed betą z prawdziwymi użytkownikami.
+- Podczas testów rejestracji powstało testowe konto na wymyślony adres
+  `pawel.test.tennistogether@gmail.com` (niepotwierdzone, nikt się nim nie
+  zaloguje) — do usunięcia w Authentication → Users w panelu Supabase,
+  jeśli przeszkadza.
+
 ## Następne kroki
 
-1. Uzupełnić `.env` z danymi nowego projektu Supabase (region Frankfurt) i
-   uruchomić `supabase/migrations/0001_init.sql`.
-2. Dodać logowanie (Supabase Auth) i ekran rejestracji rodzic/zawodnik.
-3. Przenieść/zaadaptować scraper OTK z projektu PZT do zasilania `tournaments`.
-4. Zaprojektować identyfikację wizualną (branding) — równolegle, nie blokuje
-   budowy funkcji.
-5. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
+1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ —
+   zrobione, patrz wyżej.
+2. Ekran dodawania profilu zawodnika (`players`) — bez tego rejestracja
+   rodzica nie prowadzi jeszcze do niczego użytecznego.
+3. Uzupełnić RLS na pozostałych tabelach (na razie tylko `players` ma
+   politykę) — patrz `supabase/migrations/0001_init.sql`, sekcja na końcu.
+4. Przenieść/zaadaptować scraper OTK z projektu PZT do zasilania `tournaments`.
+5. Podłączyć prawdziwe dane pod pozostałe ekrany (Przejazdy, Noclegi, Moje
+   wyjazdy, Wiadomości) zamiast `src/mockData.js`.
+6. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.
