@@ -25,8 +25,12 @@ as $$
       or exists (select 1 from lodging_offers where trip_id = p_trip_id);
 $$;
 
+-- IF EXISTS na WSZYSTKICH trzech możliwych nazwach (stare z 0005/0006 i ta
+-- docelowa) — żeby ten skrypt dało się bezpiecznie uruchomić więcej niż
+-- raz, bez błędu "already exists" przy ponownym wklejeniu.
 drop policy if exists "Wyjazd widoczny publicznie, jeśli ma ofertę/prośbę o przejazd" on trips;
 drop policy if exists "Wyjazd widoczny publicznie, jeśli ma ofertę noclegową" on trips;
+drop policy if exists "Wyjazd widoczny publicznie, jeśli ma ofertę przejazdu/noclegu" on trips;
 
 create policy "Wyjazd widoczny publicznie, jeśli ma ofertę przejazdu/noclegu"
   on trips for select to authenticated
@@ -34,6 +38,7 @@ create policy "Wyjazd widoczny publicznie, jeśli ma ofertę przejazdu/noclegu"
 
 drop policy if exists "Zawodnik widoczny publicznie, jeśli jego wyjazd ma ofertę/prośbę" on players;
 drop policy if exists "Zawodnik widoczny publicznie, jeśli jego wyjazd ma ofertę noclegową" on players;
+drop policy if exists "Zawodnik widoczny publicznie, jeśli jego wyjazd ma ofertę" on players;
 
 create policy "Zawodnik widoczny publicznie, jeśli jego wyjazd ma ofertę"
   on players for select to authenticated
