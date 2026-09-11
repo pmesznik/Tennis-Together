@@ -87,17 +87,30 @@ export function useJoinRequests(kind, accountId) {
     // zaakceptowana, tylko czat trzeba by dodać ręcznie później.
     if (status === "accepted") {
       const requesterAccountId = data.requester_trip?.created_by_account_id;
-      if (requesterAccountId && accountId) {
-        const { data: conv } = await supabase
+      if (!requesterAccountId || !accountId) {
+        // Nie powinno się zdarzyć przy poprawnym RLS (patrz
+        // 0010_fix_requester_trip_visibility.sql) — zostawiamy ślad
+        // zamiast cicho pomijać tworzenie rozmowy, jak wcześniej.
+        console.error(
+          "[useJoinRequests] Brak requester_trip.created_by_account_id — rozmowa NIE powstała dla",
+          requestId
+        );
+      } else {
+        const { data: conv, error: convError } = await supabase
           .from("conversations")
           .insert({ kind, [cfg.offerFk]: data[cfg.offerFk] })
           .select("id")
           .single();
-        if (conv) {
-          await supabase.from("conversation_participants").insert([
+        if (convError) {
+          console.error("[useJoinRequests] Nie udało się utworzyć rozmowy:", convError.message);
+        } else if (conv) {
+          const { error: participantsError } = await supabase.from("conversation_participants").insert([
             { conversation_id: conv.id, account_id: accountId },
             { conversation_id: conv.id, account_id: requesterAccountId },
           ]);
+          if (participantsError) {
+            console.error("[useJoinRequests] Nie udało się dodać uczestników rozmowy:", participantsError.message);
+          }
         }
       }
     }
