@@ -72,7 +72,11 @@ export default function App() {
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
-          padding: "16px",
+          // env(safe-area-inset-top) + viewport-fit=cover (index.html) —
+          // bez tego pasek stanu na Androidzie zasłania nagłówek (patrz
+          // ten sam problem i rozwiązanie w projekcie PZT, App.jsx).
+          padding: "16px 16px 16px 16px",
+          paddingTop: "calc(16px + env(safe-area-inset-top, 0px))",
           borderBottom: "1px solid var(--color-card-border)",
         }}
       >
@@ -114,6 +118,9 @@ export default function App() {
           background: "var(--color-bg-elevated)",
           position: "sticky",
           bottom: 0,
+          // Pasek nawigacji Androida (gesty/przyciski) inaczej zasłania
+          // zakładki — patrz komentarz przy nagłówku wyżej.
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
         {TABS.map((tab) => (

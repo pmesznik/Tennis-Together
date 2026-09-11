@@ -20,7 +20,10 @@ export default function AuthPage() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        padding: 16,
+        // Ekran logowania renderuje się poza szkieletem App.jsx (bez
+        // sesji nie ma jeszcze nagłówka/nav), więc sam potrzebuje marginesu
+        // na pasek stanu/gestów Androida — patrz komentarze w App.jsx.
+        padding: "calc(16px + env(safe-area-inset-top, 0px)) 16px calc(16px + env(safe-area-inset-bottom, 0px))",
       }}
     >
       <div style={{ width: "100%", maxWidth: 420, display: "flex", flexDirection: "column", gap: 16 }}>
