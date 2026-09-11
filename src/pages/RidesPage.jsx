@@ -3,10 +3,17 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext.jsx";
 import { useTrips } from "../lib/useTrips.js";
 import { useRideOffers, useRideRequests } from "../lib/useRides.js";
+import { useJoinRequests } from "../lib/useJoinRequests.js";
 import ErrorBox from "../components/ErrorBox.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
 
 const dateFormatter = new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long" });
+
+const STATUS_LABELS = {
+  pending: { text: "Prośba wysłana — czeka na odpowiedź", cls: "pending" },
+  accepted: { text: "Zaakceptowano ✅", cls: "ok" },
+  declined: { text: "Odrzucono", cls: "muted" },
+};
 
 function tripLabel(trip) {
   const t = trip?.tournaments;
@@ -22,6 +29,7 @@ export default function RidesPage() {
   const { trips } = useTrips(account?.id);
   const { offers, loading: offersLoading, error: offersError, createOffer } = useRideOffers();
   const { requests, loading: requestsLoading, error: requestsError, createRequest } = useRideRequests();
+  const joinRequests = useJoinRequests("ride", account?.id);
 
   const switchTab = (t) => {
     setTab(t);
@@ -31,6 +39,8 @@ export default function RidesPage() {
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <h1>Przejazdy</h1>
+
+      <IncomingRequests joinRequests={joinRequests} />
 
       <div className="segmented">
         <button className={tab === "offers" ? "is-active" : ""} onClick={() => switchTab("offers")}>
@@ -58,23 +68,7 @@ export default function RidesPage() {
           {offersLoading && <p style={{ color: "var(--color-text-muted)" }}>Wczytywanie…</p>}
           {!offersLoading &&
             offers.map((r) => (
-              <div key={r.id} className="glass-card">
-                <p style={{ margin: "0 0 4px", fontWeight: 700 }}>{r.trips?.tournaments?.name ?? "Turniej"}</p>
-                <p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--color-text-muted)" }}>
-                  🚗 {r.trips?.departure_city ?? "?"} · {r.trips?.players?.first_name ?? "Zawodnik"}
-                  {r.trips?.departure_date ? ` · wyjazd ${dateFormatter.format(new Date(r.trips.departure_date))}` : ""}
-                </p>
-
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
-                  <span className="status-pill ok">{r.free_seats} wolne miejsca</span>
-                  {r.luggage_space && <span className="status-pill muted">🧳 {r.luggage_space}</span>}
-                  {r.cost_split_suggestion && <span className="status-pill muted">{r.cost_split_suggestion}</span>}
-                </div>
-
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button className="btn-primary">Poproś o miejsce (wkrótce)</button>
-                </div>
-              </div>
+              <OfferCard key={r.id} offer={r} account={account} trips={trips} joinRequests={joinRequests} />
             ))}
           {!offersLoading && offers.length === 0 && (
             <p style={{ color: "var(--color-text-muted)" }}>Nikt jeszcze nie zgłosił wolnego miejsca.</p>
@@ -106,8 +100,139 @@ export default function RidesPage() {
 
       <p style={{ color: "var(--color-text-muted)", fontSize: 12 }}>
         Aplikacja docelowo dopasowuje ogłoszenia automatycznie po turnieju,
-        terminie i trasie. „Poproś o miejsce" / akceptacja próśb — następny krok.
+        terminie i trasie. „Zaproponuj przejazd" dla „Szukam przejazdu" — następny krok.
       </p>
+    </div>
+  );
+}
+
+function IncomingRequests({ joinRequests }) {
+  const { incoming, respond } = joinRequests;
+  const [busyId, setBusyId] = useState(null);
+
+  if (incoming.length === 0) return null;
+
+  const handle = async (id, status) => {
+    setBusyId(id);
+    await respond(id, status);
+    setBusyId(null);
+  };
+
+  return (
+    <div className="glass-card" style={{ borderColor: "var(--color-primary)" }}>
+      <p style={{ margin: "0 0 10px", fontWeight: 700 }}>
+        Prośby o dołączenie do Twoich przejazdów ({incoming.length})
+      </p>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {incoming.map((r) => (
+          <div
+            key={r.id}
+            className="list-item"
+            style={{ justifyContent: "space-between", flexWrap: "wrap" }}
+          >
+            <div>
+              <strong style={{ fontSize: 14 }}>{r.requester_trip?.players?.first_name ?? "Zawodnik"}</strong>
+              <span style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
+                {" "}
+                · {r.requester_trip?.departure_city ?? "?"}
+              </span>
+            </div>
+            {r.status === "pending" ? (
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn-primary" disabled={busyId === r.id} onClick={() => handle(r.id, "accepted")}>
+                  Akceptuj
+                </button>
+                <button className="btn-ghost" disabled={busyId === r.id} onClick={() => handle(r.id, "declined")}>
+                  Odrzuć
+                </button>
+              </div>
+            ) : (
+              <span className={`status-pill ${STATUS_LABELS[r.status]?.cls ?? "muted"}`}>
+                {STATUS_LABELS[r.status]?.text ?? r.status}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function OfferCard({ offer: r, account, trips, joinRequests }) {
+  const [showPicker, setShowPicker] = useState(false);
+  const [tripId, setTripId] = useState(trips[0]?.id ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+
+  const isMine = r.trips?.created_by_account_id === account?.id;
+  const myOutgoing = joinRequests.outgoing.find((jr) => jr.ride_offers?.id === r.id);
+
+  const handleRequest = async () => {
+    setBusy(true);
+    setError(null);
+    const { error } = await joinRequests.requestToJoin({ offerId: r.id, requesterTripId: tripId });
+    setBusy(false);
+    if (error) setError(error.message || "Nie udało się wysłać prośby.");
+    else setShowPicker(false);
+  };
+
+  return (
+    <div className="glass-card">
+      <p style={{ margin: "0 0 4px", fontWeight: 700 }}>{r.trips?.tournaments?.name ?? "Turniej"}</p>
+      <p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--color-text-muted)" }}>
+        🚗 {r.trips?.departure_city ?? "?"} · {r.trips?.players?.first_name ?? "Zawodnik"}
+        {r.trips?.departure_date ? ` · wyjazd ${dateFormatter.format(new Date(r.trips.departure_date))}` : ""}
+      </p>
+
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+        <span className="status-pill ok">{r.free_seats} wolne miejsca</span>
+        {r.luggage_space && <span className="status-pill muted">🧳 {r.luggage_space}</span>}
+        {r.cost_split_suggestion && <span className="status-pill muted">{r.cost_split_suggestion}</span>}
+      </div>
+
+      {isMine ? (
+        <span className="status-pill muted">To Twoja oferta</span>
+      ) : myOutgoing ? (
+        <span className={`status-pill ${STATUS_LABELS[myOutgoing.status]?.cls ?? "muted"}`}>
+          {STATUS_LABELS[myOutgoing.status]?.text ?? myOutgoing.status}
+        </span>
+      ) : showPicker ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {trips.length === 0 ? (
+            <p style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
+              Najpierw zgłoś swój wyjazd w zakładce <Link to="/turnieje">Turnieje</Link>.
+            </p>
+          ) : (
+            <>
+              <div className="chip-row">
+                {trips.map((t) => (
+                  <button
+                    key={t.id}
+                    type="button"
+                    className={`chip ${tripId === t.id ? "is-active" : ""}`}
+                    onClick={() => setTripId(t.id)}
+                  >
+                    {tripLabel(t)}
+                  </button>
+                ))}
+              </div>
+              {error && <ErrorBox>{error}</ErrorBox>}
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn-primary" onClick={handleRequest} disabled={busy}>
+                  {busy ? "Wysyłam…" : "Potwierdź prośbę"}
+                </button>
+                <button className="btn-ghost" onClick={() => setShowPicker(false)}>
+                  Anuluj
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      ) : (
+        <button className="btn-primary" onClick={() => setShowPicker(true)}>
+          Poproś o miejsce
+        </button>
+      )}
     </div>
   );
 }

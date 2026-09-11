@@ -350,22 +350,50 @@ w czacie** (Paweł prosił o to wprost, 2026-09-11).
   co 0005, plus **rozszerzenie** (nie zastąpienie) kaskady widoczności
   `trips`/`players` o wyjazdy z ofertą TYLKO noclegową (bez oferty
   przejazdu) — polityki RLS są OR'owane, więc 0005 i 0006 współpracują.
-  **Jeszcze nie uruchomiona w bazie.**
+  Podana Pawłowi do uruchomienia — **status niepotwierdzony** (padło
+  "pracuj dalej" zanim potwierdził wprost).
 - Build zweryfikowany, ekran logowania bez błędów konsoli — **pełny
   przepływ Noclegów jeszcze nie zweryfikowany na żywo**.
+
+## Akceptacja próśb o dołączenie (2026-09-11)
+
+- **"Poproś o miejsce" (Przejazdy) i "Dołącz" (Noclegi) działają
+  naprawdę.** `src/lib/useJoinRequests.js` — jeden hook parametryzowany
+  `kind: "ride" | "lodging"` (te dwie tabele mają identyczny kształt),
+  zwraca `incoming` (prośby na MOJE oferty) i `outgoing` (MOJE prośby),
+  rozdzielone po `created_by_account_id` w embedowanych wyjazdach. RLS
+  (patrz niżej) i tak każdemu pokazuje tylko wiersze, w których jest
+  stroną — podział w JS jest tylko dla wygody wyświetlania.
+- **Nowa sekcja "Prośby o dołączenie do Twoich..."** na górze
+  RidesPage/LodgingPage (widoczna tylko, gdy są jakieś przychodzące
+  prośby) — Akceptuj/Odrzuć.
+- **Karta oferty** rozpoznaje trzy stany: to Twoja własna oferta ("To
+  Twoja oferta"), już wysłałeś prośbę (status: oczekuje/zaakceptowano/
+  odrzucono) albo możesz jeszcze poprosić (przycisk → wybór własnego
+  wyjazdu → potwierdzenie).
+- **RLS** (`supabase/migrations/0007_join_requests_rls.sql`): proszący
+  tworzy/usuwa tylko swoje prośby (dla własnego wyjazdu), obie strony
+  widzą prośbę, tylko właściciel oferty może zaakceptować/odrzucić
+  (`update`). To domyka model prywatności z dokumentu założeń —
+  wcześniej te dwie tabele były całkowicie zablokowane (RLS włączone,
+  zero polityk). **Jeszcze nie uruchomiona w bazie.**
+- Build zweryfikowany, ekran logowania bez błędów konsoli — **pełny
+  przepływ (prośba → akceptacja) jeszcze nie zweryfikowany na żywo**,
+  wymaga dwóch różnych kont testowych (proszący + właściciel oferty) do
+  pełnego sprawdzenia.
 
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
    ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ /
    ~~"Jadę na ten turniej" → trips~~ / ~~import turniejów OTK~~ /
-   ~~Przejazdy~~ / ~~Noclegi (kod)~~ — zrobione (patrz wyżej).
-2. **Zostało do zrobienia przez Ciebie:** `0006_lodging_rls.sql` w SQL
-   Editorze (jak poprzednie migracje) → Noclegi zaczną działać zgodnie
-   z RLS.
-3. Ekran akceptacji próśb o dołączenie (`ride_join_requests` +
-   `lodging_join_requests` — jeden wzorzec, dwie tabele). Odblokuje
-   prawdziwe "Poproś o miejsce" / "Dołącz".
+   ~~Przejazdy~~ / ~~Noclegi~~ / ~~akceptacja próśb (kod)~~ — zrobione
+   (patrz wyżej).
+2. **Zostało do zrobienia przez Ciebie:** potwierdzić `0006_lodging_rls.sql`
+   + uruchomić `0007_join_requests_rls.sql` w SQL Editorze.
+3. Przetestować pełny przepływ prośba → akceptacja — potrzeba **dwóch
+   kont** (np. drugi e-mail), żeby jedna osoba dodała ofertę, a druga
+   poprosiła o dołączenie.
 4. Podłączyć prawdziwe dane pod Wiadomości zamiast `mockData.js` — ostatni
    ekran na atrapach.
 5. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
