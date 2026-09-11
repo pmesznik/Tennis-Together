@@ -293,29 +293,59 @@ w czacie** (Paweł prosił o to wprost, 2026-09-11).
   `src/lib/useTrips.js`) zamiast `mockData.js`. Zakładki
   nadchodzące/w trakcie organizacji/zakończone są wyliczane z daty turnieju
   i pola `trips.status` (nowy wyjazd = "planning" = trafia do "w trakcie
-  organizacji", dopóki nic go nie potwierdzi). Statusy transportu/noclegu
-  są na razie zawsze "nikt się nie zgłosił" — realne dopiero po podłączeniu
-  zakładek Przejazdy/Noclegi.
-- **RLS na `trips`** (`supabase/migrations/0004_trips_rls.sql`) — właściciel
-  = `created_by_account_id`. **Jeszcze nie uruchomiona w bazie.**
-- Build zweryfikowany, ekran logowania sprawdzony w przeglądarce bez
-  błędów — **pełny przepływ "Jadę" → "Moje wyjazdy" jeszcze nie
-  zweryfikowany na żywo** (czeka na Twoją sesję + migrację 0004).
+  organizacji", dopóki nic go nie potwierdzi).
+- **RLS na `trips`** (`0004_trips_rls.sql`) i na `tournaments`
+  (`0003_tournaments.sql`) — **uruchomione przez Pawła, potwierdzone.**
+- **Import turniejów OTK — działa.** Pierwsza próba (workflow „Import
+  turniejów OTK") wysypała się z `InvalidHeader`: sekret
+  `SUPABASE_SERVICE_ROLE_KEY` w GitHub zawierał jakiś biały znak (pewnie
+  kopiowanie "na oko"). Naprawione w `scripts/import_tournaments.py` —
+  skrypt teraz usuwa WSZYSTKIE białe znaki z klucza, nie tylko brzegi.
+  Drugie uruchomienie: sukces, wszystkie kroki przeszły (scraper znalazł
+  20 turniejów przy pierwszej, nieudanej próbie zapisu — sam scraping
+  działał od początku).
+
+## Przejazdy (2026-09-11)
+
+- **Zakładka Przejazdy czyta i zapisuje prawdziwe dane**
+  (`RidesPage.jsx` + `src/lib/useRides.js`) zamiast `mockData.js`. Oba
+  kierunki ("Mam wolne miejsce" / "Szukam przejazdu") — lista widoczna dla
+  wszystkich zalogowanych + formularz dodawania, który wymaga wybrania
+  jednego z WŁASNYCH wyjazdów (z "Moje wyjazdy") jako punktu odniesienia.
+  Jeśli użytkownik nie ma jeszcze żadnego wyjazdu, widzi podpowiedź z
+  linkiem do zakładki Turnieje zamiast pustego formularza.
+- **"Poproś o miejsce" / "Zaproponuj przejazd" / "Napisz" są nadal
+  nieaktywne** (oznaczone "wkrótce") — wymagają ekranu zarządzania
+  `ride_join_requests` (akceptacja przez właściciela oferty) i czatu,
+  których jeszcze nie ma.
+- **RLS** (`supabase/migrations/0005_rides_rls.sql`): `ride_offers` i
+  `ride_requests` czytelne dla każdego zalogowanego (to jest sens tej
+  funkcji), zapis tylko przez właściciela powiązanego wyjazdu. Dodatkowo
+  kaskadowa widoczność `trips`/`players` — wyjazd i zawodnik stają się
+  publicznie widoczni (imię, miasto wyjazdu — nie telefon, ten jest gdzie
+  indziej) dopiero gdy ich właściciel doda do nich ofertę/prośbę o
+  przejazd. Realizuje zasadę "imię i region widoczne od razu, reszta po
+  akceptacji" z dokumentu założeń. `ride_join_requests` ma włączone RLS
+  bez żadnej polityki (czyli zablokowane dla wszystkich poza
+  service_role) — czeka na ekran zarządzania. **Migracja 0005 jeszcze nie
+  uruchomiona w bazie.**
+- Build zweryfikowany, ekran logowania bez błędów konsoli — **pełny
+  przepływ Przejazdów jeszcze nie zweryfikowany na żywo** (czeka na
+  migrację 0005 + Twoją sesję z co najmniej jednym wyjazdem).
 
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
    ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ /
-   ~~"Jadę na ten turniej" → trips~~ — zrobione (patrz wyżej).
-2. **Zostało do zrobienia przez Ciebie (kiedy będzie okazja, nie pilne):**
-   - `0003_tournaments.sql` w SQL Editorze + sekret
-     `SUPABASE_SERVICE_ROLE_KEY` w GitHub + ręczne uruchomienie workflow
-     „Import turniejów OTK" → prawdziwy kalendarz w zakładce Turnieje
-   - `0004_trips_rls.sql` w SQL Editorze → "Jadę na ten turniej" zacznie
-     działać zgodnie z RLS
-3. Uzupełniać RLS na kolejnych tabelach w miarę podłączania realnych
-   ekranów — nie hurtowo na raz.
-4. Podłączyć prawdziwe dane pod pozostałe ekrany (Przejazdy, Noclegi,
-   Wiadomości) zamiast `src/mockData.js`.
+   ~~"Jadę na ten turniej" → trips~~ / ~~import turniejów OTK~~ /
+   ~~Przejazdy (kod)~~ — zrobione (patrz wyżej).
+2. **Zostało do zrobienia przez Ciebie:** `0005_rides_rls.sql` w SQL
+   Editorze (jak poprzednie migracje) → Przejazdy zaczną działać zgodnie
+   z RLS.
+3. Ekran akceptacji próśb o dołączenie (`ride_join_requests`) — właściciel
+   oferty widzi kto prosi i może zaakceptować/odrzucić. Dopiero to
+   odblokuje prawdziwe "Poproś o miejsce".
+4. Podłączyć prawdziwe dane pod Noclegi i Wiadomości zamiast `mockData.js`
+   (ten sam wzorzec co Przejazdy).
 5. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.
