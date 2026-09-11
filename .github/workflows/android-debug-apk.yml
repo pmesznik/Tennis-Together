@@ -5,10 +5,14 @@ name: Build Android Debug APK
 # keystore "debug"). Nie nadaje się do Google Play — tam potrzebny będzie
 # android-build.yml z prawdziwym kluczem (patrz PLAN.md).
 #
-# Uruchamiane RĘCZNIE: zakładka "Actions" w repo → ten workflow z listy po
-# lewej → przycisk "Run workflow".
+# Buduje się automatycznie po każdym pushu na main (jak w projekcie PZT) —
+# zawsze masz świeży APK gotowy do pobrania w zakładce Actions, bez
+# klikania. Da się też uruchomić ręcznie (workflow_dispatch), np. żeby
+# zbudować bez robienia nowego commita.
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
