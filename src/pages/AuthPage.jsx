@@ -1,24 +1,14 @@
 import { useState } from "react";
 import { supabase } from "../lib/supabase.js";
 import { useAuth } from "../lib/AuthContext.jsx";
+import ErrorBox from "../components/ErrorBox.jsx";
+import { inputStyle, labelStyle } from "../components/formStyles.js";
 
 const ROLES = [
   { value: "parent", label: "Rodzic" },
   { value: "guardian", label: "Opiekun" },
   { value: "coach", label: "Trener / klub" },
 ];
-
-const inputStyle = {
-  width: "100%",
-  padding: "10px 14px",
-  borderRadius: 12,
-  border: "1px solid var(--color-card-border)",
-  background: "var(--color-bg-elevated)",
-  color: "var(--color-text)",
-  fontSize: 14,
-};
-
-const labelStyle = { fontSize: 13, color: "var(--color-text-muted)", marginBottom: 4, display: "block" };
 
 export default function AuthPage() {
   const [mode, setMode] = useState("login"); // "login" | "register"
@@ -199,23 +189,6 @@ function RegisterForm({ onDone }) {
         {busy ? "Zakładam konto…" : "Załóż konto"}
       </button>
     </form>
-  );
-}
-
-function ErrorBox({ children }) {
-  return (
-    <p
-      style={{
-        margin: 0,
-        fontSize: 13,
-        color: "var(--color-secondary)",
-        background: "color-mix(in srgb, var(--color-secondary) 12%, transparent)",
-        borderRadius: 10,
-        padding: "8px 12px",
-      }}
-    >
-      {children}
-    </p>
   );
 }
 

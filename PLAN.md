@@ -176,12 +176,26 @@ model biznesowy (z dokumentu założeń, sekcje 19–21).
 - Profil rodzica (`ProfilePage.jsx`) pokazuje już prawdziwe imię/rolę/e-mail
   z bazy i ma działające „Wyloguj”. Zgody i historia wyjazdów są nadal
   danymi przykładowymi — `consents`/`trips` jeszcze nie podłączone.
-- Profil zawodnika jest nadal w całości na danych przykładowych — nie ma
-  jeszcze ekranu dodawania zawodnika (`players`).
-- RLS nadal włączone tylko na `players` — pozostałe tabele (w tym
-  `accounts`) są otwarte przez anon key. To świadomy dług na czas
-  budowy, ale pozycja z checklisty niżej ("RLS uzupełnione na każdej
-  tabeli") musi zniknąć przed betą z prawdziwymi użytkownikami.
+- **Profil zawodnika działa na prawdziwych danych** (`src/lib/usePlayers.js`
+  + `ProfilePage.jsx`): dodawanie zawodnika (imię, nazwisko, rok urodzenia,
+  kategoria, klub, miasto — opcjonalne pola), przełącznik między kilkoma
+  dziećmi tego samego rodzica, formularz od razu widoczny, gdy lista jest
+  pusta. Zapisane w `players`, chronione RLS (patrz niżej). **Nie
+  zweryfikowane jeszcze na żywo w przeglądarce** — wymaga prawdziwej,
+  potwierdzonej sesji, której nie mam jak sam wytworzyć (brak dostępu do
+  Twojej skrzynki). Build produkcyjny przechodzi bez błędów. Do sprawdzenia
+  przy Twoim najbliższym logowaniu: zakładka „Zawodnik” w Profilu.
+- **RLS uzupełnione o `accounts`** — była to jedyna otwarta tabela z
+  prawdziwym zagrożeniem prywatności (każdy z publicznym kluczem anon mógł
+  czytać/nadpisywać cudze konta, w tym telefony). Nowa migracja:
+  `supabase/migrations/0002_accounts_rls.sql` — **jeszcze nie uruchomiona w
+  bazie, trzeba wkleić ją w SQL Editor tak samo jak 0001**.
+  Pozostałe tabele (`trips`, `ride_offers`, `conversations`, `messages`...)
+  są nadal otwarte, ale świadomie odłożone — żadna z nich nie jest jeszcze
+  podłączona pod prawdziwe zapytania (dalej korzystają z `mockData.js`),
+  więc pisanie im polityk RLS teraz byłoby zgadywaniem bez możliwości
+  przetestowania. Robimy to tabela po tabeli, w miarę jak każda dostaje
+  prawdziwy ekran.
 - Podczas testów rejestracji powstało testowe konto na wymyślony adres
   `pawel.test.tennistogether@gmail.com` (niepotwierdzone, nikt się nim nie
   zaloguje) — do usunięcia w Authentication → Users w panelu Supabase,
@@ -189,14 +203,15 @@ model biznesowy (z dokumentu założeń, sekcje 19–21).
 
 ## Następne kroki
 
-1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ —
-   zrobione, patrz wyżej.
-2. Ekran dodawania profilu zawodnika (`players`) — bez tego rejestracja
-   rodzica nie prowadzi jeszcze do niczego użytecznego.
-3. Uzupełnić RLS na pozostałych tabelach (na razie tylko `players` ma
-   politykę) — patrz `supabase/migrations/0001_init.sql`, sekcja na końcu.
-4. Przenieść/zaadaptować scraper OTK z projektu PZT do zasilania `tournaments`.
-5. Podłączyć prawdziwe dane pod pozostałe ekrany (Przejazdy, Noclegi, Moje
+1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
+   ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ — zrobione, patrz
+   wyżej. **Zostało do zrobienia przez Ciebie:** uruchomić
+   `0002_accounts_rls.sql` w SQL Editorze (jak przy 0001) i przetestować
+   dodawanie zawodnika po zalogowaniu na prawdziwe konto.
+2. Uzupełniać RLS na kolejnych tabelach w miarę podłączania realnych
+   ekranów (patrz wyżej) — nie hurtowo na raz.
+3. Przenieść/zaadaptować scraper OTK z projektu PZT do zasilania `tournaments`.
+4. Podłączyć prawdziwe dane pod pozostałe ekrany (Przejazdy, Noclegi, Moje
    wyjazdy, Wiadomości) zamiast `src/mockData.js`.
 6. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.
