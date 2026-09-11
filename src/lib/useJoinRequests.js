@@ -127,5 +127,16 @@ export function useJoinRequests(kind, accountId) {
     return { data };
   };
 
-  return { incoming, outgoing, loading, error, requestToJoin, respond, refresh };
+  // "Cofnij prośbę" — proszący rezygnuje, zanim właściciel oferty
+  // zdążył odpowiedzieć. RLS (0007_join_requests_rls.sql, polityka
+  // "Proszący usuwa swoją prośbę...") już na to pozwala od początku —
+  // brakowało tylko przycisku w UI.
+  const withdraw = async (requestId) => {
+    const { error } = await supabase.from(cfg.table).delete().eq("id", requestId);
+    if (error) return { error };
+    setRows((prev) => prev.filter((r) => r.id !== requestId));
+    return {};
+  };
+
+  return { incoming, outgoing, loading, error, requestToJoin, respond, withdraw, refresh };
 }

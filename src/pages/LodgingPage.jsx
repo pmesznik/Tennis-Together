@@ -16,6 +16,7 @@ const STATUS_LABELS = {
   pending: { text: "Prośba wysłana — czeka na odpowiedź", cls: "pending" },
   accepted: { text: "Zaakceptowano ✅", cls: "ok" },
   declined: { text: "Odrzucono", cls: "muted" },
+  cancelled: { text: "Anulowano", cls: "muted" },
 };
 
 export default function LodgingPage() {
@@ -105,6 +106,13 @@ function IncomingRequests({ joinRequests }) {
                   Odrzuć
                 </button>
               </div>
+            ) : r.status === "accepted" ? (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <span className="status-pill ok">Zaakceptowano ✅</span>
+                <button className="btn-ghost" disabled={busyId === r.id} onClick={() => handle(r.id, "cancelled")}>
+                  Zrezygnuj
+                </button>
+              </div>
             ) : (
               <span className={`status-pill ${STATUS_LABELS[r.status]?.cls ?? "muted"}`}>
                 {STATUS_LABELS[r.status]?.text ?? r.status}
@@ -118,8 +126,11 @@ function IncomingRequests({ joinRequests }) {
 }
 
 function OfferCard({ offer: l, account, trips, joinRequests }) {
+  // Tylko wyjazdy NA TEN SAM turniej co ogłoszenie — patrz komentarz przy
+  // analogicznym miejscu w RidesPage.jsx.
+  const matchingTrips = trips.filter((t) => t.tournament_id === l.trips?.tournament_id);
   const [showPicker, setShowPicker] = useState(false);
-  const [tripId, setTripId] = useState(trips[0]?.id ?? "");
+  const [tripId, setTripId] = useState(matchingTrips[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -133,6 +144,22 @@ function OfferCard({ offer: l, account, trips, joinRequests }) {
     setBusy(false);
     if (error) setError(error.message || "Nie udało się wysłać prośby.");
     else setShowPicker(false);
+  };
+
+  const handleWithdraw = async () => {
+    setBusy(true);
+    setError(null);
+    const { error } = await joinRequests.withdraw(myOutgoing.id);
+    setBusy(false);
+    if (error) setError(error.message || "Nie udało się cofnąć prośby.");
+  };
+
+  const handleCancelAccepted = async () => {
+    setBusy(true);
+    setError(null);
+    const { error } = await joinRequests.respond(myOutgoing.id, "cancelled");
+    setBusy(false);
+    if (error) setError(error.message || "Nie udało się zrezygnować z noclegu.");
   };
 
   return (
@@ -151,19 +178,33 @@ function OfferCard({ offer: l, account, trips, joinRequests }) {
       {isMine ? (
         <span className="status-pill muted">To Twoja oferta</span>
       ) : myOutgoing ? (
-        <span className={`status-pill ${STATUS_LABELS[myOutgoing.status]?.cls ?? "muted"}`}>
-          {STATUS_LABELS[myOutgoing.status]?.text ?? myOutgoing.status}
-        </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+          <span className={`status-pill ${STATUS_LABELS[myOutgoing.status]?.cls ?? "muted"}`}>
+            {STATUS_LABELS[myOutgoing.status]?.text ?? myOutgoing.status}
+          </span>
+          {error && <ErrorBox>{error}</ErrorBox>}
+          {myOutgoing.status === "pending" && (
+            <button className="btn-ghost" onClick={handleWithdraw} disabled={busy}>
+              {busy ? "Cofam…" : "Cofnij prośbę"}
+            </button>
+          )}
+          {myOutgoing.status === "accepted" && (
+            <button className="btn-ghost" onClick={handleCancelAccepted} disabled={busy}>
+              {busy ? "Rezygnuję…" : "Zrezygnuj z noclegu"}
+            </button>
+          )}
+        </div>
       ) : showPicker ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {trips.length === 0 ? (
+          {matchingTrips.length === 0 ? (
             <p style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
-              Najpierw zgłoś swój wyjazd w zakładce <Link to="/turnieje">Turnieje</Link>.
+              Najpierw zgłoś wyjazd na {l.trips?.tournaments?.name ?? "ten turniej"} w{" "}
+              <Link to={`/turnieje?turniej=${l.trips?.tournament_id ?? ""}`}>Turniejach</Link>.
             </p>
           ) : (
             <>
               <div className="chip-row">
-                {trips.map((t) => (
+                {matchingTrips.map((t) => (
                   <button
                     key={t.id}
                     type="button"

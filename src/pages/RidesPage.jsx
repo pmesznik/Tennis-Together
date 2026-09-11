@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../lib/AuthContext.jsx";
 import { useTrips } from "../lib/useTrips.js";
 import { useRideOffers, useRideRequests } from "../lib/useRides.js";
 import { useJoinRequests } from "../lib/useJoinRequests.js";
+import { useCityCoordinates, findCityCoords, haversineKm } from "../lib/useCityCoordinates.js";
 import ErrorBox from "../components/ErrorBox.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
 
@@ -13,6 +14,7 @@ const STATUS_LABELS = {
   pending: { text: "Prośba wysłana — czeka na odpowiedź", cls: "pending" },
   accepted: { text: "Zaakceptowano ✅", cls: "ok" },
   declined: { text: "Odrzucono", cls: "muted" },
+  cancelled: { text: "Anulowano", cls: "muted" },
 };
 
 function tripLabel(trip) {
@@ -30,6 +32,26 @@ export default function RidesPage() {
   const { offers, loading: offersLoading, error: offersError, createOffer } = useRideOffers();
   const { requests, loading: requestsLoading, error: requestsError, createRequest } = useRideRequests();
   const joinRequests = useJoinRequests("ride", account?.id);
+  const { cities } = useCityCoordinates();
+
+  // "Z mojej okolicy" — sortuje oferty po odległości od miasta z profilu
+  // (account.city), nie po turnieju/dacie. Bez tego rodzic z Zabrza musi
+  // ręcznie przeglądać całą listę, żeby zauważyć, że najbliższy wolny fotel
+  // jest akurat z Pszczyny, a nie z drugiego końca Polski.
+  const myCoords = useMemo(() => findCityCoords(cities, account?.city), [cities, account?.city]);
+  const sortedOffers = useMemo(() => {
+    if (!myCoords) return offers;
+    const withDistance = offers.map((o) => {
+      const coords = findCityCoords(cities, o.trips?.departure_city);
+      return { ...o, _distanceKm: coords ? haversineKm(myCoords.lat, myCoords.lng, coords.lat, coords.lng) : null };
+    });
+    return withDistance.sort((a, b) => {
+      if (a._distanceKm == null && b._distanceKm == null) return 0;
+      if (a._distanceKm == null) return 1;
+      if (b._distanceKm == null) return -1;
+      return a._distanceKm - b._distanceKm;
+    });
+  }, [offers, cities, myCoords]);
 
   const switchTab = (t) => {
     setTab(t);
@@ -66,8 +88,13 @@ export default function RidesPage() {
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {offersError && <ErrorBox>Nie udało się wczytać ofert: {offersError}</ErrorBox>}
           {offersLoading && <p style={{ color: "var(--color-text-muted)" }}>Wczytywanie…</p>}
+          {!offersLoading && !myCoords && offers.length > 0 && (
+            <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)" }}>
+              Ustaw swoje miasto w <Link to="/profil">Profilu</Link>, żeby zobaczyć oferty najbliższe Tobie.
+            </p>
+          )}
           {!offersLoading &&
-            offers.map((r) => (
+            sortedOffers.map((r) => (
               <OfferCard key={r.id} offer={r} account={account} trips={trips} joinRequests={joinRequests} />
             ))}
           {!offersLoading && offers.length === 0 && (
@@ -146,6 +173,13 @@ function IncomingRequests({ joinRequests }) {
                   Odrzuć
                 </button>
               </div>
+            ) : r.status === "accepted" ? (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                <span className="status-pill ok">Zaakceptowano ✅</span>
+                <button className="btn-ghost" disabled={busyId === r.id} onClick={() => handle(r.id, "cancelled")}>
+                  Zrezygnuj
+                </button>
+              </div>
             ) : (
               <span className={`status-pill ${STATUS_LABELS[r.status]?.cls ?? "muted"}`}>
                 {STATUS_LABELS[r.status]?.text ?? r.status}
@@ -159,8 +193,12 @@ function IncomingRequests({ joinRequests }) {
 }
 
 function OfferCard({ offer: r, account, trips, joinRequests }) {
+  // Tylko wyjazdy NA TEN SAM turniej co oferta — bez tego dało się wysłać
+  // prośbę o dołączenie do przejazdu na turniej X, wybierając przez
+  // pomyłkę (albo brak innej opcji) swój wyjazd na turniej Y.
+  const matchingTrips = trips.filter((t) => t.tournament_id === r.trips?.tournament_id);
   const [showPicker, setShowPicker] = useState(false);
-  const [tripId, setTripId] = useState(trips[0]?.id ?? "");
+  const [tripId, setTripId] = useState(matchingTrips[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
 
@@ -176,6 +214,22 @@ function OfferCard({ offer: r, account, trips, joinRequests }) {
     else setShowPicker(false);
   };
 
+  const handleWithdraw = async () => {
+    setBusy(true);
+    setError(null);
+    const { error } = await joinRequests.withdraw(myOutgoing.id);
+    setBusy(false);
+    if (error) setError(error.message || "Nie udało się cofnąć prośby.");
+  };
+
+  const handleCancelAccepted = async () => {
+    setBusy(true);
+    setError(null);
+    const { error } = await joinRequests.respond(myOutgoing.id, "cancelled");
+    setBusy(false);
+    if (error) setError(error.message || "Nie udało się zrezygnować z przejazdu.");
+  };
+
   return (
     <div className="glass-card">
       <p style={{ margin: "0 0 4px", fontWeight: 700 }}>{r.trips?.tournaments?.name ?? "Turniej"}</p>
@@ -186,6 +240,9 @@ function OfferCard({ offer: r, account, trips, joinRequests }) {
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
         <span className="status-pill ok">{r.free_seats} wolne miejsca</span>
+        {r._distanceKm != null && (
+          <span className="status-pill muted">📍 ~{Math.round(r._distanceKm)} km od Ciebie</span>
+        )}
         {r.luggage_space && <span className="status-pill muted">🧳 {r.luggage_space}</span>}
         {r.cost_split_suggestion && <span className="status-pill muted">{r.cost_split_suggestion}</span>}
       </div>
@@ -193,19 +250,33 @@ function OfferCard({ offer: r, account, trips, joinRequests }) {
       {isMine ? (
         <span className="status-pill muted">To Twoja oferta</span>
       ) : myOutgoing ? (
-        <span className={`status-pill ${STATUS_LABELS[myOutgoing.status]?.cls ?? "muted"}`}>
-          {STATUS_LABELS[myOutgoing.status]?.text ?? myOutgoing.status}
-        </span>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-start" }}>
+          <span className={`status-pill ${STATUS_LABELS[myOutgoing.status]?.cls ?? "muted"}`}>
+            {STATUS_LABELS[myOutgoing.status]?.text ?? myOutgoing.status}
+          </span>
+          {error && <ErrorBox>{error}</ErrorBox>}
+          {myOutgoing.status === "pending" && (
+            <button className="btn-ghost" onClick={handleWithdraw} disabled={busy}>
+              {busy ? "Cofam…" : "Cofnij prośbę"}
+            </button>
+          )}
+          {myOutgoing.status === "accepted" && (
+            <button className="btn-ghost" onClick={handleCancelAccepted} disabled={busy}>
+              {busy ? "Rezygnuję…" : "Zrezygnuj z przejazdu"}
+            </button>
+          )}
+        </div>
       ) : showPicker ? (
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {trips.length === 0 ? (
+          {matchingTrips.length === 0 ? (
             <p style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
-              Najpierw zgłoś swój wyjazd w zakładce <Link to="/turnieje">Turnieje</Link>.
+              Najpierw zgłoś wyjazd na {r.trips?.tournaments?.name ?? "ten turniej"} w{" "}
+              <Link to={`/turnieje?turniej=${r.trips?.tournament_id ?? ""}`}>Turniejach</Link>.
             </p>
           ) : (
             <>
               <div className="chip-row">
-                {trips.map((t) => (
+                {matchingTrips.map((t) => (
                   <button
                     key={t.id}
                     type="button"
