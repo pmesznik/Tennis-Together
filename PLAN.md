@@ -327,25 +327,46 @@ w czacie** (Paweł prosił o to wprost, 2026-09-11).
   przejazd. Realizuje zasadę "imię i region widoczne od razu, reszta po
   akceptacji" z dokumentu założeń. `ride_join_requests` ma włączone RLS
   bez żadnej polityki (czyli zablokowane dla wszystkich poza
-  service_role) — czeka na ekran zarządzania. **Migracja 0005 jeszcze nie
-  uruchomiona w bazie.**
+  service_role) — czeka na ekran zarządzania. **Uruchomiona przez Pawła,
+  potwierdzone.**
+
+## Noclegi (2026-09-11)
+
+- **Zakładka Noclegi czyta i zapisuje prawdziwe dane**
+  (`LodgingPage.jsx` + `src/lib/useLodging.js`) zamiast `mockData.js`.
+  Jedna tabela `lodging_offers` z polem `kind`
+  (`shared_booking`/`roommate_wanted`) zamiast dwóch osobnych jak przy
+  przejazdach — schemat bazy tak to od początku modelował. Formularz
+  dodawania wymaga wybrania jednego z własnych wyjazdów, tak jak
+  w Przejazdach.
+- **"Nocleg u zawodnika" zostaje wyszarzoną kartą "Etap 2"** — bez zmian,
+  nie ma odpowiednika w schemacie (`kind` dopuszcza tylko te dwie
+  wartości), zgodnie z wcześniejszą decyzją o odłożeniu.
+- **"Dołącz" nadal nieaktywne** (oznaczone "wkrótce") — czeka na ten sam
+  ekran zarządzania prośbami co "Poproś o miejsce" w Przejazdach
+  (`lodging_join_requests` ma dokładnie taki sam wzorzec RLS jak
+  `ride_join_requests`: włączone, bez polityk, czeka).
+- **RLS** (`supabase/migrations/0006_lodging_rls.sql`) — ten sam wzorzec
+  co 0005, plus **rozszerzenie** (nie zastąpienie) kaskady widoczności
+  `trips`/`players` o wyjazdy z ofertą TYLKO noclegową (bez oferty
+  przejazdu) — polityki RLS są OR'owane, więc 0005 i 0006 współpracują.
+  **Jeszcze nie uruchomiona w bazie.**
 - Build zweryfikowany, ekran logowania bez błędów konsoli — **pełny
-  przepływ Przejazdów jeszcze nie zweryfikowany na żywo** (czeka na
-  migrację 0005 + Twoją sesję z co najmniej jednym wyjazdem).
+  przepływ Noclegów jeszcze nie zweryfikowany na żywo**.
 
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
    ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ /
    ~~"Jadę na ten turniej" → trips~~ / ~~import turniejów OTK~~ /
-   ~~Przejazdy (kod)~~ — zrobione (patrz wyżej).
-2. **Zostało do zrobienia przez Ciebie:** `0005_rides_rls.sql` w SQL
-   Editorze (jak poprzednie migracje) → Przejazdy zaczną działać zgodnie
+   ~~Przejazdy~~ / ~~Noclegi (kod)~~ — zrobione (patrz wyżej).
+2. **Zostało do zrobienia przez Ciebie:** `0006_lodging_rls.sql` w SQL
+   Editorze (jak poprzednie migracje) → Noclegi zaczną działać zgodnie
    z RLS.
-3. Ekran akceptacji próśb o dołączenie (`ride_join_requests`) — właściciel
-   oferty widzi kto prosi i może zaakceptować/odrzucić. Dopiero to
-   odblokuje prawdziwe "Poproś o miejsce".
-4. Podłączyć prawdziwe dane pod Noclegi i Wiadomości zamiast `mockData.js`
-   (ten sam wzorzec co Przejazdy).
+3. Ekran akceptacji próśb o dołączenie (`ride_join_requests` +
+   `lodging_join_requests` — jeden wzorzec, dwie tabele). Odblokuje
+   prawdziwe "Poproś o miejsce" / "Dołącz".
+4. Podłączyć prawdziwe dane pod Wiadomości zamiast `mockData.js` — ostatni
+   ekran na atrapach.
 5. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.
