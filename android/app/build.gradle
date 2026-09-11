@@ -1,5 +1,26 @@
 apply plugin: 'com.android.application'
 
+// Klucz podpisujący — wczytywany z keystore.properties (lokalnie, gitignored)
+// albo wygenerowany przez CI z sekretów GitHub Actions tuż przed buildem.
+// Bez niego (np. debug build, albo release build zanim wygenerujemy klucz)
+// signingConfig po prostu się nie stosuje — Gradle produkuje wtedy
+// NIEPODPISANY release (app-release-unsigned.apk), nie plik o oczekiwanej
+// przez CI nazwie app-release.apk. Patrz PLAN.md, sekcja o kluczu.
+def keystorePropertiesFile = file('keystore.properties')
+def keystoreProperties = new Properties()
+def hasSigningConfig = keystorePropertiesFile.exists()
+if (hasSigningConfig) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
+// versionCode MUSI rosnąć z każdym wydaniem, inaczej Android przy instalacji
+// "aktualizacji" z tym samym kodem może zignorować nowy APK (patrz notatka
+// w projekcie PZT — dokładnie to się tam stało). CI przekazuje
+// -PappVersionCode=<numer przebiegu GitHub Actions> (zawsze rosnący);
+// lokalny build bez tej flagi dostaje wysoki fallback.
+def appVersionCode = project.hasProperty('appVersionCode') ? (project.appVersionCode as Integer) : 90000
+def appVersionName = project.hasProperty('appVersionName') ? project.appVersionName : "0.1.${appVersionCode}"
+
 android {
     namespace = "pl.tennistogether.app"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -7,8 +28,8 @@ android {
         applicationId "pl.tennistogether.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode appVersionCode
+        versionName appVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -16,10 +37,23 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            if (hasSigningConfig) {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            if (hasSigningConfig) {
+                signingConfig signingConfigs.release
+            }
         }
     }
 }

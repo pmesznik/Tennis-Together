@@ -8,13 +8,11 @@ name: Build Android APK
 # Wymaga sekretów (Settings → Secrets and variables → Actions):
 #   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD,
 #   ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD
-# Bez nich ten workflow się nie powiedzie — dopóki nie ma klucza podpisującego,
-# budujemy i testujemy lokalnie (npx cap run android) albo uruchamiamy
-# workflow_dispatch ręcznie po dodaniu sekretów.
+# Dopóki ich nie ma, ten workflow się nie powiedzie — dlatego TYLKO ręczne
+# uruchomienie (workflow_dispatch), nie na każdy push. Do szybkich testów
+# bez klucza służy android-debug-apk.yml (buduje niepodpisany debug APK).
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
