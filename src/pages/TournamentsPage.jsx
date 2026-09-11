@@ -1,6 +1,11 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useTournaments, sourceLabel } from "../lib/useTournaments.js";
+import { useTrips } from "../lib/useTrips.js";
+import { usePlayers } from "../lib/usePlayers.js";
+import { useAuth } from "../lib/AuthContext.jsx";
 import ErrorBox from "../components/ErrorBox.jsx";
+import { inputStyle, labelStyle } from "../components/formStyles.js";
 
 const SOURCES = [
   { key: "all", label: "Wszystkie" },
@@ -19,7 +24,11 @@ function formatRange(startsOn, endsOn) {
 
 export default function TournamentsPage() {
   const [source, setSource] = useState("all");
+  const [openTournamentId, setOpenTournamentId] = useState(null);
   const { tournaments, loading, error } = useTournaments();
+  const { account } = useAuth();
+  const { players, loading: playersLoading } = usePlayers(account?.id);
+  const { trips, createTrip } = useTrips(account?.id);
 
   const visible = tournaments.filter((t) => source === "all" || t.source === source);
 
@@ -46,31 +55,62 @@ export default function TournamentsPage() {
 
       {!loading && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {visible.map((t) => (
-            <div key={t.id} className="glass-card">
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <div>
-                  <span className="status-pill muted">{sourceLabel(t.source)}</span>
-                  <p style={{ margin: "8px 0 2px", fontWeight: 700, fontSize: 16 }}>{t.name}</p>
-                  <p style={{ margin: 0, color: "var(--color-text-muted)", fontSize: 13 }}>
-                    {t.city ?? "Miasto nieznane"} · {t.category} · {formatRange(t.starts_on, t.ends_on)}
-                  </p>
+          {visible.map((t) => {
+            const tripsForTournament = trips.filter((tr) => tr.tournament_id === t.id);
+            return (
+              <div key={t.id} className="glass-card">
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                  <div>
+                    <span className="status-pill muted">{sourceLabel(t.source)}</span>
+                    <p style={{ margin: "8px 0 2px", fontWeight: 700, fontSize: 16 }}>{t.name}</p>
+                    <p style={{ margin: 0, color: "var(--color-text-muted)", fontSize: 13 }}>
+                      {t.city ?? "Miasto nieznane"} · {t.category} · {formatRange(t.starts_on, t.ends_on)}
+                    </p>
+                  </div>
+                  <div className="avatar-circle" title="Kategoria wiekowa">
+                    {t.category}
+                  </div>
                 </div>
-                <div className="avatar-circle" title="Kategoria wiekowa">
-                  {t.category}
-                </div>
-              </div>
 
-              <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                <button className="btn-primary">Jadę na ten turniej</button>
-                {t.website_url && (
-                  <a className="btn-ghost" href={t.website_url} target="_blank" rel="noreferrer">
-                    Strona turnieju
-                  </a>
+                {tripsForTournament.length > 0 && (
+                  <p style={{ margin: "12px 0 0", fontSize: 13 }}>
+                    <span className="badge-verified">
+                      ✅ Jedziesz: {tripsForTournament.map((tr) => tr.players?.first_name).join(", ")}
+                    </span>
+                  </p>
+                )}
+
+                <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                  <button
+                    className="btn-primary"
+                    onClick={() => setOpenTournamentId(openTournamentId === t.id ? null : t.id)}
+                  >
+                    {openTournamentId === t.id ? "Anuluj" : "Jadę na ten turniej"}
+                  </button>
+                  {tripsForTournament.length > 0 && (
+                    <Link className="btn-ghost" to="/moje-wyjazdy">
+                      Zobacz w Moich wyjazdach
+                    </Link>
+                  )}
+                  {t.website_url && (
+                    <a className="btn-ghost" href={t.website_url} target="_blank" rel="noreferrer">
+                      Strona turnieju
+                    </a>
+                  )}
+                </div>
+
+                {openTournamentId === t.id && (
+                  <JoinTripForm
+                    tournamentId={t.id}
+                    players={players}
+                    playersLoading={playersLoading}
+                    createTrip={createTrip}
+                    onDone={() => setOpenTournamentId(null)}
+                  />
                 )}
               </div>
-            </div>
-          ))}
+            );
+          })}
           {visible.length === 0 && (
             <p style={{ color: "var(--color-text-muted)" }}>
               {tournaments.length === 0
@@ -84,9 +124,99 @@ export default function TournamentsPage() {
       <p style={{ color: "var(--color-text-muted)", fontSize: 12 }}>
         Kalendarz OTK jest importowany automatycznie codziennie ze scrapera
         PZT. Tennis Europe i ITF na start dodawane ręcznie / przez zgłoszenia
-        (patrz PLAN.md). Przycisk „Jadę na ten turniej” jeszcze nic nie
-        zapisuje — to następny krok.
+        (patrz PLAN.md).
       </p>
     </div>
+  );
+}
+
+function JoinTripForm({ tournamentId, players, playersLoading, createTrip, onDone }) {
+  const [playerId, setPlayerId] = useState(players[0]?.id ?? "");
+  const [departureCity, setDepartureCity] = useState("");
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  if (playersLoading) {
+    return <p style={{ marginTop: 12, color: "var(--color-text-muted)" }}>Wczytywanie zawodników…</p>;
+  }
+
+  if (players.length === 0) {
+    return (
+      <div className="glass-card" style={{ marginTop: 12 }}>
+        <p style={{ margin: "0 0 12px", fontSize: 13 }}>
+          Najpierw dodaj zawodnika, żeby zgłosić wyjazd na turniej.
+        </p>
+        <Link className="btn-primary" to="/profil">
+          Dodaj zawodnika w Profilu
+        </Link>
+      </div>
+    );
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    if (!departureCity.trim()) {
+      setError("Podaj miasto wyjazdu — to po nim aplikacja dopasowuje przejazdy i noclegi.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await createTrip({
+      playerId,
+      tournamentId,
+      departureCity: departureCity.trim(),
+    });
+    setBusy(false);
+    if (error) {
+      setError(
+        error.code === "23505"
+          ? "Ten zawodnik już ma zgłoszony wyjazd na ten turniej."
+          : error.message || "Nie udało się zapisać wyjazdu."
+      );
+      return;
+    }
+    onDone();
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid var(--color-card-border)" }}
+    >
+      {players.length > 1 && (
+        <div style={{ marginBottom: 10 }}>
+          <label style={labelStyle}>Który zawodnik jedzie?</label>
+          <div className="chip-row">
+            {players.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                className={`chip ${playerId === p.id ? "is-active" : ""}`}
+                onClick={() => setPlayerId(p.id)}
+              >
+                {p.first_name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <label style={labelStyle}>Miasto wyjazdu</label>
+      <input
+        style={inputStyle}
+        placeholder="np. Katowice"
+        value={departureCity}
+        onChange={(e) => setDepartureCity(e.target.value)}
+        autoFocus
+      />
+
+      {error && (
+        <p style={{ color: "var(--color-secondary)", fontSize: 13, margin: "8px 0 0" }}>{error}</p>
+      )}
+
+      <button className="btn-primary" type="submit" disabled={busy} style={{ marginTop: 10 }}>
+        {busy ? "Zapisuję…" : "Potwierdź wyjazd"}
+      </button>
+    </form>
   );
 }

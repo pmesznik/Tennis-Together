@@ -247,21 +247,64 @@ Pełny opis wzorca (do zastosowania w KOLEJNYCH projektach Capacitor od
 pierwszego dnia, nie po fakcie) zapisany w pamięci: `android-safe-area-insets`
 i `capacitor-sw-versioncode`.
 
+**Czwarty problem, znaleziony tego samego dnia:** `android-debug-apk.yml` na
+świeżej maszynie GitHub Actions generował za każdym razem INNY, losowy klucz
+debug (`~/.android/debug.keystore` nie jest zapamiętywany między
+uruchomieniami CI) — Android traktował appkę podpisaną innym kluczem jako
+inną aplikację i blokował instalację "aktualizacji" (trzeba było
+odinstalować poprzednią wersję). Naprawione: `android/app/debug.keystore`
+ze standardowymi, publicznie znanymi danymi (nie sekret) wygenerowany RAZ
+przez CI i zacommitowany do repo — od buildu #7 każdy kolejny ma ten sam
+podpis. Po drodze złapany i naprawiony błąd składni YAML (wieloliniowy
+komunikat commita bez wcięcia w bloku `run: |` łamał parsowanie całego
+pliku workflow — od tego czasu każdy plik `.yml` jest walidowany lokalnie
+przez PyYAML przed pushem).
+
+**Dystrybucja debug APK:** oprócz artifactu w zakładce Actions (wymaga
+zalogowania do GitHub), `android-debug-apk.yml` publikuje teraz też
+**GitHub Release** (`softprops/action-gh-release@v2`, tag `debug-vN`,
+`prerelease: true`) — stały publiczny link do pobrania wprost w
+przeglądarce na telefonie, bez logowania. Nie rozważamy dystrybucji przez
+Google Play (świadoma decyzja Pawła) — jeśli sideloading APK zacznie
+sprawiać kłopoty z Play Protect na szerszą skalę, jedyna droga bez Play
+Store to instalacja przez ADB (kabel USB), do rozważenia później.
+**Zasada robocza: przy każdym nowym buildzie APK, link do Release podawany
+w czacie** (Paweł prosił o to wprost, 2026-09-11).
+
+## Turnieje → wyjazdy (2026-09-11)
+
+- **"Jadę na ten turniej" zapisuje teraz naprawdę** (`TournamentsPage.jsx`):
+  klik otwiera formularz (wybór zawodnika, jeśli rodzic ma więcej niż
+  jednego + **miasto wyjazdu**, wymagane — to jest to, po czym docelowo
+  działa system dopasowań z dokumentu założeń, więc nie mogło zostać
+  pominięte nawet w najprostszej wersji). Tworzy wiersz w `trips`.
+- **"Moje wyjazdy" czyta prawdziwe dane** (`TripsPage.jsx` +
+  `src/lib/useTrips.js`) zamiast `mockData.js`. Zakładki
+  nadchodzące/w trakcie organizacji/zakończone są wyliczane z daty turnieju
+  i pola `trips.status` (nowy wyjazd = "planning" = trafia do "w trakcie
+  organizacji", dopóki nic go nie potwierdzi). Statusy transportu/noclegu
+  są na razie zawsze "nikt się nie zgłosił" — realne dopiero po podłączeniu
+  zakładek Przejazdy/Noclegi.
+- **RLS na `trips`** (`supabase/migrations/0004_trips_rls.sql`) — właściciel
+  = `created_by_account_id`. **Jeszcze nie uruchomiona w bazie.**
+- Build zweryfikowany, ekran logowania sprawdzony w przeglądarce bez
+  błędów — **pełny przepływ "Jadę" → "Moje wyjazdy" jeszcze nie
+  zweryfikowany na żywo** (czeka na Twoją sesję + migrację 0004).
+
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
-   ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ — zrobione i
-   potwierdzone na żywo (patrz wyżej).
-2. **Zostało do zrobienia przez Ciebie:** uruchomić
-   `0003_tournaments.sql` w SQL Editorze, dodać sekret
-   `SUPABASE_SERVICE_ROLE_KEY` w GitHub, uruchomić workflow „Import
-   turniejów OTK” ręcznie (Actions → ten workflow → Run workflow) i
-   sprawdzić zakładkę Turnieje.
-3. „Jadę na ten turniej” → utworzenie wiersza w `trips` (dziś tylko UI, nic
-   nie zapisuje) — naturalny następny krok po zweryfikowaniu importu.
-4. Uzupełniać RLS na kolejnych tabelach w miarę podłączania realnych
+   ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ /
+   ~~"Jadę na ten turniej" → trips~~ — zrobione (patrz wyżej).
+2. **Zostało do zrobienia przez Ciebie (kiedy będzie okazja, nie pilne):**
+   - `0003_tournaments.sql` w SQL Editorze + sekret
+     `SUPABASE_SERVICE_ROLE_KEY` w GitHub + ręczne uruchomienie workflow
+     „Import turniejów OTK" → prawdziwy kalendarz w zakładce Turnieje
+   - `0004_trips_rls.sql` w SQL Editorze → "Jadę na ten turniej" zacznie
+     działać zgodnie z RLS
+3. Uzupełniać RLS na kolejnych tabelach w miarę podłączania realnych
    ekranów — nie hurtowo na raz.
-5. Podłączyć prawdziwe dane pod pozostałe ekrany (Przejazdy, Noclegi, Moje
-   wyjazdy, Wiadomości) zamiast `src/mockData.js`.
-6. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
+4. Podłączyć prawdziwe dane pod pozostałe ekrany (Przejazdy, Noclegi,
+   Wiadomości) zamiast `src/mockData.js`.
+5. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.
