@@ -22,7 +22,16 @@ w `docs/ATZ_Aplikacja_Zawodnicy_Rodzice_Zalozenia.docx`.
 - **Zasięg startu:** cała Polska od pierwszego dnia (nie wąski region) — patrz
   ryzyko "zimny start" niżej, kompensujemy to panelem trenera/klubu w MVP.
 - **Budżet:** ograniczony na start — wszystko na darmowych/najtańszych planach,
-  płatne dopiero jak będzie ruch.
+  płatne dopiero jak będzie ruch. **Supabase Free** (sprawdzone 2026-09,
+  supabase.com/pricing): 500 MB bazy, 1 GB storage, 50 000 MAU, 5 GB
+  transferu/mies., 2 darmowe projekty, bez karty kredytowej, użycie
+  komercyjne dozwolone. Wystarczy z dużym zapasem na fazę budowy i pierwsze
+  testy. Jedyny haczyk: darmowy projekt usypia się po 7 dniach bez ruchu i
+  budzi się sam przy pierwszym zapytaniu (parę sekund opóźnienia) — jeśli
+  zrobimy dłuższą przerwę, może trzeba będzie ręcznie "obudzić" go w panelu.
+  Przejście na Pro (od 25 USD/mies., głównie: brak usypiania + kopie
+  zapasowe) dopiero gdy zbliżymy się do limitów albo aplikacja ma już
+  żywych użytkowników.
 - **Termin:** działające MVP do końca 2026 (orientacyjnie ~3,5 miesiąca od
   2026-09-10 — to jest napięty harmonogram, patrz "Ryzyka terminu" niżej).
 - **Design:** nowy, własny styl marki (nie kopiujemy wyglądu apki PZT) —
