@@ -53,7 +53,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon -PappVersionCode=${{ github.run_number }} -PappVersionName="0.1.${{ github.run_number }}"
 
       - name: Nazwij plik z numerem wersji
         run: |

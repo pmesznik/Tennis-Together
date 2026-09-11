@@ -14,3 +14,15 @@ createRoot(document.getElementById("root")).render(
     </AuthProvider>
   </React.StrictMode>
 );
+
+// Service Worker (offline/PWA) tylko dla wersji webowej — w Capacitorze
+// (isNativePlatform) go NIE rejestrujemy, bo tylko duplikuje i psuje dostęp
+// offline, który apka i tak ma wprost z plików w APK. Ten sam wzorzec co
+// w projekcie PZT Rankingi (src/main.jsx) — tam brak tego warunku
+// spowodował, że stary Service Worker przechwytywał żądania po każdej
+// aktualizacji APK i serwował nieaktualne pliki.
+if ("serviceWorker" in navigator && !window.Capacitor?.isNativePlatform?.()) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js", { scope: "/" });
+  });
+}

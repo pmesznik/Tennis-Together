@@ -11,6 +11,14 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
+      // Rejestrację robimy ręcznie w src/main.jsx, TYLKO poza natywną apką
+      // (Capacitor.isNativePlatform()). Bez tego Service Worker próbowałby
+      // działać też wewnątrz WebView na Androidzie, gdzie tylko szkodzi —
+      // dostęp offline appka i tak ma wprost z plików w APK. Dokładnie ten
+      // problem (stary SW przechwytujący żądania po aktualizacji) uderzył
+      // w projekt PZT Rankingi i wymagał naprawy po stronie natywnej
+      // (czyszczenie danych WebView) — tu zapobiegamy mu od początku.
+      injectRegister: null,
       includeAssets: ["icon-192.png", "icon-512.png"],
       manifest: {
         name: "Tennis Together",
