@@ -96,17 +96,26 @@ export function useJoinRequests(kind, accountId) {
           requestId
         );
       } else {
-        const { data: conv, error: convError } = await supabase
+        // UWAGA: id generujemy PO STRONIE KLIENTA i wstawiamy bez
+        // .select() po insercie. Gdyby dociągnąć id z powrotem przez
+        // .select().single(), PostgREST robi INSERT ... RETURNING, a to
+        // podlega polityce SELECT na `conversations`
+        // (is_conversation_participant) — w momencie insertu NIKT
+        // jeszcze nie jest uczestnikiem (dodajemy ich dopiero linijkę
+        // niżej), więc RETURNING nie znajduje wiersza i Postgres zgłasza
+        // "new row violates row-level security policy". Realny błąd
+        // złapany na żywo w testach z Pawłem — rozmowa nigdy nie
+        // powstawała mimo poprawnych polityk RLS.
+        const conversationId = crypto.randomUUID();
+        const { error: convError } = await supabase
           .from("conversations")
-          .insert({ kind, [cfg.offerFk]: data[cfg.offerFk] })
-          .select("id")
-          .single();
+          .insert({ id: conversationId, kind, [cfg.offerFk]: data[cfg.offerFk] });
         if (convError) {
           console.error("[useJoinRequests] Nie udało się utworzyć rozmowy:", convError.message);
-        } else if (conv) {
+        } else {
           const { error: participantsError } = await supabase.from("conversation_participants").insert([
-            { conversation_id: conv.id, account_id: accountId },
-            { conversation_id: conv.id, account_id: requesterAccountId },
+            { conversation_id: conversationId, account_id: accountId },
+            { conversation_id: conversationId, account_id: requesterAccountId },
           ]);
           if (participantsError) {
             console.error("[useJoinRequests] Nie udało się dodać uczestników rozmowy:", participantsError.message);
