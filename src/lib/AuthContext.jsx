@@ -92,6 +92,19 @@ export function AuthProvider({ children }) {
 
   const signOut = () => supabase.auth.signOut();
 
+  const updateAccount = async (fields) => {
+    if (!account) return { error: new Error("Brak zalogowanego konta.") };
+    const { data, error } = await supabase
+      .from("accounts")
+      .update(fields)
+      .eq("id", account.id)
+      .select()
+      .single();
+    if (error) return { error };
+    setAccount(data);
+    return { data };
+  };
+
   const value = {
     session,
     account,
@@ -99,6 +112,7 @@ export function AuthProvider({ children }) {
     loading: session === undefined || (session !== null && accountLoading && !account),
     registerPendingProfile,
     signOut,
+    updateAccount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

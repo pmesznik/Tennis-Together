@@ -48,5 +48,18 @@ export function usePlayers(ownerAccountId) {
     return { data };
   };
 
-  return { players, loading, error, addPlayer, refresh };
+  const updatePlayer = async (playerId, fields) => {
+    const { data, error } = await supabase
+      .from("players")
+      .update(fields)
+      .eq("id", playerId)
+      .select()
+      .single();
+
+    if (error) return { error };
+    setPlayers((prev) => prev.map((p) => (p.id === playerId ? data : p)));
+    return { data };
+  };
+
+  return { players, loading, error, addPlayer, updatePlayer, refresh };
 }

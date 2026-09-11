@@ -465,23 +465,35 @@ widoczność z punktu widzenia OBU stron od razu, i nigdy nie kończyć
 insertu `.select()`-em na tabeli, której polityka SELECT zależy od
 danych, które dopiero za chwilę powstaną.
 
+## Edycja profilu (2026-09-11)
+
+- **„Edytuj profil" i „Edytuj profil zawodnika" działają naprawdę.**
+  `AuthContext.jsx` ma teraz `updateAccount()` (imię, telefon, miasto,
+  klub), `usePlayers.js` ma `updatePlayer()`. `ProfilePage.jsx`
+  przebudowany — formularz dodawania i edycji zawodnika to teraz jeden
+  wspólny komponent (`PlayerForm`, różni się tylko wartościami
+  startowymi), żeby nie dublować pól.
+- Zweryfikowane na żywo na Koncie B: zmiana telefonu/miasta rodzica i
+  miasta zawodnika zapisały się i od razu wyświetliły poprawnie, bez
+  nowych błędów w konsoli.
+- **Dane testowe wyczyszczone** — `delete from trips;` (kaskada usunęła
+  oferty/prośby/rozmowy/wiadomości), konta i zawodnicy (Ala/Jag) zostały.
+
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
    ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ /
    ~~"Jadę na ten turniej" → trips~~ / ~~import turniejów OTK~~ /
    ~~Przejazdy~~ / ~~Noclegi~~ / ~~akceptacja próśb~~ / ~~Wiadomości~~ /
-   ~~pełny test na dwóch kontach~~ — zrobione i **potwierdzone na żywo**
-   (patrz wyżej). Cała pętla MVP z dokumentu założeń działa od początku
-   do końca.
+   ~~pełny test na dwóch kontach~~ / ~~edycja profilu~~ — zrobione i
+   **potwierdzone na żywo** (patrz wyżej).
 2. Zgody i historia wyjazdów w profilu rodzica (`consents` w bazie już
-   istnieje, nic jej jeszcze nie zasila) — ostatni fragment na atrapach.
-3. Ekran akceptacji/odrzucenia dla `ride_join_requests`/
-   `lodging_join_requests` już działa — brakuje jeszcze możliwości
-   **wycofania własnej prośby** (RLS na to pozwala, `for delete` w 0007,
-   UI jeszcze nie ma przycisku).
-4. Rozważyć osobny panel/oznaczenie dla kont testowych vs. prawdziwych —
-   w bazie jest już sporo danych z dzisiejszych testów (Dragon Cup, OTK
-   U18 itd.), do wyczyszczenia przed pokazaniem komuś spoza tego testu.
-5. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
+   istnieje, nic jej jeszcze nie zasila) — jedyny fragment nadal na
+   atrapach. Czeka pośrednio na prawnika (prawdziwa treść zgody musi
+   pochodzić z regulaminu, którego jeszcze nie mamy) — sam mechanizm
+   zapisu dałoby się zbudować wcześniej, ale bez treści zgody nie ma co
+   pokazywać do zaakceptowania.
+3. Możliwość **wycofania własnej prośby** o dołączenie (RLS już na to
+   pozwala, `for delete` w 0007, UI jeszcze nie ma przycisku).
+4. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.

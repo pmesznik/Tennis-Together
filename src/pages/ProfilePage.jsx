@@ -39,12 +39,24 @@ export default function ProfilePage() {
 }
 
 function ParentProfile() {
-  const { account, user, signOut } = useAuth();
+  const { account, user, signOut, updateAccount } = useAuth();
+  const [editing, setEditing] = useState(false);
   // Zgody i historia wyjazdów nie są jeszcze podłączone pod `consents`/`trips`
   // (patrz PLAN.md, "Następne kroki") — na razie dane przykładowe, reszta
-  // karty (imię, rola, e-mail, wylogowanie) jest już prawdziwa.
+  // karty (imię, rola, e-mail, telefon, wylogowanie, edycja) jest już prawdziwa.
   const mock = MOCK_PARENT_PROFILE;
   const displayName = account?.full_name || user?.email || "…";
+
+  if (editing) {
+    return (
+      <EditParentForm
+        account={account}
+        updateAccount={updateAccount}
+        onDone={() => setEditing(false)}
+        onCancel={() => setEditing(false)}
+      />
+    );
+  }
 
   return (
     <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -66,6 +78,20 @@ function ParentProfile() {
         <p style={{ margin: 0 }}>{user?.email}</p>
       </div>
 
+      {account?.phone && (
+        <div>
+          <p style={{ margin: "0 0 6px", fontSize: 13, color: "var(--color-text-muted)" }}>Telefon</p>
+          <p style={{ margin: 0 }}>{account.phone}</p>
+        </div>
+      )}
+
+      {(account?.city || account?.club_name) && (
+        <div style={{ display: "flex", gap: 24 }}>
+          {account?.city && <Field label="Miasto" value={account.city} />}
+          {account?.club_name && <Field label="Klub / akademia" value={account.club_name} />}
+        </div>
+      )}
+
       <div>
         <p style={{ margin: "0 0 6px", fontSize: 13, color: "var(--color-text-muted)" }}>
           Zgody <span style={{ opacity: 0.6 }}>(przykładowe — jeszcze nie z bazy)</span>
@@ -86,7 +112,9 @@ function ParentProfile() {
       </div>
 
       <div style={{ display: "flex", gap: 8 }}>
-        <button className="btn-ghost">Edytuj profil</button>
+        <button className="btn-ghost" onClick={() => setEditing(true)}>
+          Edytuj profil
+        </button>
         <button className="btn-ghost" onClick={signOut}>
           Wyloguj
         </button>
@@ -95,22 +123,90 @@ function ParentProfile() {
   );
 }
 
+function EditParentForm({ account, updateAccount, onDone, onCancel }) {
+  const [fullName, setFullName] = useState(account?.full_name ?? "");
+  const [phone, setPhone] = useState(account?.phone ?? "");
+  const [city, setCity] = useState(account?.city ?? "");
+  const [clubName, setClubName] = useState(account?.club_name ?? "");
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+
+    if (!fullName.trim()) {
+      setError("Imię i nazwisko nie może być puste.");
+      return;
+    }
+
+    setBusy(true);
+    const { error } = await updateAccount({
+      full_name: fullName.trim(),
+      phone: phone.trim() || null,
+      city: city.trim() || null,
+      club_name: clubName.trim() || null,
+    });
+    setBusy(false);
+
+    if (error) {
+      setError(error.message || "Nie udało się zapisać zmian.");
+      return;
+    }
+    onDone();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="glass-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <p style={{ margin: 0, fontWeight: 700 }}>Edytuj profil</p>
+
+      <div>
+        <label style={labelStyle}>Imię i nazwisko</label>
+        <input style={inputStyle} required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+      </div>
+      <div>
+        <label style={labelStyle}>Telefon (opcjonalnie)</label>
+        <input style={inputStyle} value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="np. 600 000 000" />
+      </div>
+      <div>
+        <label style={labelStyle}>Miasto (opcjonalnie)</label>
+        <input style={inputStyle} value={city} onChange={(e) => setCity(e.target.value)} />
+      </div>
+      <div>
+        <label style={labelStyle}>Klub / akademia (opcjonalnie)</label>
+        <input style={inputStyle} value={clubName} onChange={(e) => setClubName(e.target.value)} />
+      </div>
+
+      {error && <ErrorBox>{error}</ErrorBox>}
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <button className="btn-primary" type="submit" disabled={busy}>
+          {busy ? "Zapisuję…" : "Zapisz"}
+        </button>
+        <button className="btn-ghost" type="button" onClick={onCancel}>
+          Anuluj
+        </button>
+      </div>
+    </form>
+  );
+}
+
 function PlayerSection() {
   const { account } = useAuth();
-  const { players, loading, error, addPlayer } = usePlayers(account?.id);
+  const { players, loading, error, addPlayer, updatePlayer } = usePlayers(account?.id);
   const [selectedId, setSelectedId] = useState(null);
-  const [showForm, setShowForm] = useState(false);
+  const [mode, setMode] = useState("view"); // "view" | "add" | "edit"
 
   // Gdy lista się wczyta, domyślnie pokaż pierwszego zawodnika; gdy nikogo
   // jeszcze nie ma, od razu pokaż formularz dodawania zamiast pustej karty.
   useEffect(() => {
     if (loading) return;
     if (players.length === 0) {
-      setShowForm(true);
+      setMode("add");
       setSelectedId(null);
     } else if (!selectedId || !players.some((p) => p.id === selectedId)) {
       setSelectedId(players[0].id);
-      setShowForm(false);
+      setMode("view");
     }
   }, [players, loading, selectedId]);
 
@@ -133,38 +229,51 @@ function PlayerSection() {
           {players.map((p) => (
             <button
               key={p.id}
-              className={`chip ${selectedId === p.id && !showForm ? "is-active" : ""}`}
+              className={`chip ${selectedId === p.id && mode !== "add" ? "is-active" : ""}`}
               onClick={() => {
                 setSelectedId(p.id);
-                setShowForm(false);
+                setMode("view");
               }}
             >
               {p.first_name}
             </button>
           ))}
-          <button className={`chip ${showForm ? "is-active" : ""}`} onClick={() => setShowForm(true)}>
+          <button className={`chip ${mode === "add" ? "is-active" : ""}`} onClick={() => setMode("add")}>
             + Dodaj zawodnika
           </button>
         </div>
       )}
 
-      {showForm ? (
-        <AddPlayerForm
-          addPlayer={addPlayer}
-          onAdded={(player) => {
+      {mode === "add" ? (
+        <PlayerForm
+          onSubmit={addPlayer}
+          onDone={(player) => {
             setSelectedId(player.id);
-            setShowForm(false);
+            setMode("view");
           }}
-          onCancel={players.length > 0 ? () => setShowForm(false) : undefined}
+          onCancel={players.length > 0 ? () => setMode("view") : undefined}
+          submitLabel="Dodaj zawodnika"
+          busyLabel="Dodaję…"
+          title="Dodaj zawodnika"
+        />
+      ) : mode === "edit" && selected ? (
+        <PlayerForm
+          initial={selected}
+          onSubmit={(fields) => updatePlayer(selected.id, fields)}
+          onDone={() => setMode("view")}
+          onCancel={() => setMode("view")}
+          submitLabel="Zapisz"
+          busyLabel="Zapisuję…"
+          title="Edytuj profil zawodnika"
         />
       ) : selected ? (
-        <PlayerCard player={selected} />
+        <PlayerCard player={selected} onEdit={() => setMode("edit")} />
       ) : null}
     </div>
   );
 }
 
-function PlayerCard({ player: p }) {
+function PlayerCard({ player: p, onEdit }) {
   return (
     <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -185,21 +294,23 @@ function PlayerCard({ player: p }) {
       {p.city && <Field label="Miasto" value={p.city} />}
       {p.ranking_te != null && <Field label="Ranking Tennis Europe" value={`#${p.ranking_te}`} />}
 
-      <button className="btn-ghost" style={{ alignSelf: "flex-start" }}>
+      <button className="btn-ghost" style={{ alignSelf: "flex-start" }} onClick={onEdit}>
         Edytuj profil zawodnika
       </button>
     </div>
   );
 }
 
-function AddPlayerForm({ addPlayer, onAdded, onCancel }) {
+// Wspólny formularz dodawania i edycji zawodnika — te same pola, różni się
+// tylko wartościami startowymi i etykietami.
+function PlayerForm({ initial, onSubmit, onDone, onCancel, submitLabel, busyLabel, title }) {
   const { account } = useAuth();
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [birthYear, setBirthYear] = useState("");
-  const [category, setCategory] = useState("U12");
-  const [clubName, setClubName] = useState("");
-  const [city, setCity] = useState("");
+  const [firstName, setFirstName] = useState(initial?.first_name ?? "");
+  const [lastName, setLastName] = useState(initial?.last_name ?? "");
+  const [birthYear, setBirthYear] = useState(initial?.birth_year ?? "");
+  const [category, setCategory] = useState(initial?.category ?? "U12");
+  const [clubName, setClubName] = useState(initial?.club_name ?? "");
+  const [city, setCity] = useState(initial?.city ?? "");
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
 
@@ -214,7 +325,7 @@ function AddPlayerForm({ addPlayer, onAdded, onCancel }) {
     }
 
     setBusy(true);
-    const { data, error } = await addPlayer({
+    const { data, error } = await onSubmit({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       birth_year: year,
@@ -225,15 +336,15 @@ function AddPlayerForm({ addPlayer, onAdded, onCancel }) {
     setBusy(false);
 
     if (error) {
-      setError(error.message || "Nie udało się dodać zawodnika. Spróbuj ponownie.");
+      setError(error.message || "Nie udało się zapisać. Spróbuj ponownie.");
       return;
     }
-    onAdded(data);
+    onDone(data);
   };
 
   return (
     <form onSubmit={handleSubmit} className="glass-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-      <p style={{ margin: 0, fontWeight: 700 }}>Dodaj zawodnika</p>
+      <p style={{ margin: 0, fontWeight: 700 }}>{title}</p>
 
       <div style={{ display: "flex", gap: 8 }}>
         <div style={{ flex: 1 }}>
@@ -289,7 +400,7 @@ function AddPlayerForm({ addPlayer, onAdded, onCancel }) {
 
       <div style={{ display: "flex", gap: 8 }}>
         <button className="btn-primary" type="submit" disabled={busy || !account}>
-          {busy ? "Dodaję…" : "Dodaj zawodnika"}
+          {busy ? busyLabel : submitLabel}
         </button>
         {onCancel && (
           <button className="btn-ghost" type="button" onClick={onCancel}>
