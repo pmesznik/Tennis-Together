@@ -414,26 +414,74 @@ w czacie** (Paweł prosił o to wprost, 2026-09-11).
   - Rozszerzenie widoczności `accounts` (dodatkowa, OR'owana polityka
     obok tej z 0002) — imię widoczne, gdy dzielimy rozmowę. Telefon
     nadal nigdzie nieujawniany w UI.
-  **Jeszcze nie uruchomiona w bazie — to jest teraz najważniejsza z
-  zaległych migracji, bez niej żadna rozmowa się nie otworzy.**
-- Build zweryfikowany, ekran logowania bez błędów konsoli — **pełny
-  przepływ (akceptacja → rozmowa → wiadomość) jeszcze nie zweryfikowany
-  na żywo**, wymaga dwóch kont testowych.
+  Uruchomiona przez Pawła.
+
+## Test na dwóch kontach — cztery błędy znalezione i naprawione (2026-09-11)
+
+Paweł założył drugie konto (`pawelzab@o2.pl` / Konto B) i przetestował z
+Claude cały łańcuch na żywo — Konto A na telefonie (debug APK), Konto B
+sterowane przez Claude w przeglądarce (localhost:3100), równolegle. Tego
+nie dało się złapać inaczej niż realnym testem dwustronnym. Znalezione i
+naprawione, po kolei:
+
+1. **`infinite recursion detected in policy` na `ride_offers`/`trips`.**
+   Polityka na `trips` (0005/0006) sprawdzała wprost `ride_offers`, a
+   polityka na `ride_offers` sprawdzała wprost `trips` — pętla. Blokowało
+   to praktycznie całą appkę (nawet dodawanie zawodnika). Naprawa:
+   `supabase/migrations/0009_fix_trips_recursion.sql` —
+   `trip_has_public_offer()` jako `SECURITY DEFINER`.
+2. **Wyjazd proszącego niewidoczny dla właściciela oferty.** Wyjazd stawał
+   się publiczny tylko, gdy sam miał ofertę — wyjazd osoby, która tylko
+   *prosi* o dołączenie, nigdy nie ma własnej oferty, więc pozostawał
+   niewidoczny. Objaw: "Zawodnik · ?" zamiast imienia/miasta proszącego.
+   Naprawa: `supabase/migrations/0010_fix_requester_trip_visibility.sql` —
+   `trip_is_requester_for_my_offer()`, ten sam wzorzec `SECURITY DEFINER`.
+3. **Prawdziwa przyczyna braku rozmów po akceptacji** (ta, która się
+   liczyła najbardziej — 1. i 2. tylko do niej prowadziły):
+   `insert(...).select("id").single()` na `conversations` robi
+   `INSERT ... RETURNING`, co podlega polityce SELECT tej tabeli
+   (`is_conversation_participant`) — a w momencie insertu NIKT jeszcze
+   nie jest uczestnikiem (dodajemy ich dopiero linijkę niżej). RETURNING
+   nie znajduje wiersza → Postgres zgłasza `new row violates row-level
+   security policy for table "conversations"` → cały insert się cofa.
+   Złapane dopiero z pełnym logiem konsoli (Konto B w przeglądarce, klik
+   "Akceptuj" na żywo). Naprawa w `useJoinRequests.js`: generujemy `id`
+   rozmowy po stronie klienta (`crypto.randomUUID()`) i wstawiamy bez
+   `.select()` — nie trzeba nic czytać z powrotem. Zweryfikowane
+   bezpośrednim zapytaniem do REST API (201 Created) PRZED poproszeniem
+   Pawła o kolejny test na telefonie.
+4. Sekret `SUPABASE_SERVICE_ROLE_KEY` do importu turniejów miał biały
+   znak z kopiowania — opisane wyżej przy imporcie turniejów.
+
+**Po tych czterech poprawkach (v19) cały przepływ zweryfikowany na żywo,
+w obie strony:** turniej → "Jadę" → oferta przejazdu → "Poproś o
+miejsce" → "Akceptuj" → rozmowa pojawia się automatycznie w Wiadomościach
+→ wiadomość wysłana z jednego konta dotarła i wyświetliła się na drugim
+(odpytywanie co 4s, bez Realtime).
+
+Lekcja zapisana w pamięci na przyszłość: `feedback-supabase-rls-recursion`
+— przy modelowaniu "A widzi B, gdy są połączeni relacją" projektować
+widoczność z punktu widzenia OBU stron od razu, i nigdy nie kończyć
+insertu `.select()`-em na tabeli, której polityka SELECT zależy od
+danych, które dopiero za chwilę powstaną.
 
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
    ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ /
    ~~"Jadę na ten turniej" → trips~~ / ~~import turniejów OTK~~ /
-   ~~Przejazdy~~ / ~~Noclegi~~ / ~~akceptacja próśb~~ / ~~Wiadomości
-   (kod)~~ — zrobione (patrz wyżej). **Wszystkie ekrany apki czytają
-   teraz prawdziwe dane** (poza dwoma polami w profilu rodzica).
-2. **Zostało do zrobienia przez Ciebie:** `0008_messages_rls.sql` w SQL
-   Editorze — bez niej Wiadomości pozostaną puste/zablokowane.
-3. Przetestować pełny przepływ: turniej → wyjazd → oferta → prośba →
-   akceptacja → rozmowa → wiadomość. Potrzeba **dwóch kont** (np. drugi
-   e-mail albo okno incognito).
-4. Zgody i historia wyjazdów w profilu rodzica (`consents` w bazie już
+   ~~Przejazdy~~ / ~~Noclegi~~ / ~~akceptacja próśb~~ / ~~Wiadomości~~ /
+   ~~pełny test na dwóch kontach~~ — zrobione i **potwierdzone na żywo**
+   (patrz wyżej). Cała pętla MVP z dokumentu założeń działa od początku
+   do końca.
+2. Zgody i historia wyjazdów w profilu rodzica (`consents` w bazie już
    istnieje, nic jej jeszcze nie zasila) — ostatni fragment na atrapach.
+3. Ekran akceptacji/odrzucenia dla `ride_join_requests`/
+   `lodging_join_requests` już działa — brakuje jeszcze możliwości
+   **wycofania własnej prośby** (RLS na to pozwala, `for delete` w 0007,
+   UI jeszcze nie ma przycisku).
+4. Rozważyć osobny panel/oznaczenie dla kont testowych vs. prawdziwych —
+   w bazie jest już sporo danych z dzisiejszych testów (Dragon Cup, OTK
+   U18 itd.), do wyczyszczenia przed pokazaniem komuś spoza tego testu.
 5. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.
