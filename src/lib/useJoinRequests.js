@@ -80,6 +80,28 @@ export function useJoinRequests(kind, accountId) {
       .single();
     if (error) return { error };
     setRows((prev) => prev.map((r) => (r.id === requestId ? data : r)));
+
+    // Akceptacja odblokowuje wspólną rozmowę — patrz RLS w
+    // 0008_messages_rls.sql (jedyna droga do rozmowy to zaakceptowana
+    // prośba). Best-effort: jeśli się nie uda, prośba i tak jest
+    // zaakceptowana, tylko czat trzeba by dodać ręcznie później.
+    if (status === "accepted") {
+      const requesterAccountId = data.requester_trip?.created_by_account_id;
+      if (requesterAccountId && accountId) {
+        const { data: conv } = await supabase
+          .from("conversations")
+          .insert({ kind, [cfg.offerFk]: data[cfg.offerFk] })
+          .select("id")
+          .single();
+        if (conv) {
+          await supabase.from("conversation_participants").insert([
+            { conversation_id: conv.id, account_id: accountId },
+            { conversation_id: conv.id, account_id: requesterAccountId },
+          ]);
+        }
+      }
+    }
+
     return { data };
   };
 

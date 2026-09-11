@@ -382,19 +382,58 @@ w czacie** (Paweł prosił o to wprost, 2026-09-11).
   wymaga dwóch różnych kont testowych (proszący + właściciel oferty) do
   pełnego sprawdzenia.
 
+## Wiadomości (2026-09-11)
+
+- **Ostatni ekran zszedł z danych-atrap.** `MessagesPage.jsx` +
+  `src/lib/useConversations.js` + `src/lib/useMessages.js` — lista
+  rozmów i czat na prawdziwych danych. `src/mockData.js` wyczyszczony do
+  jednego pozostałego wpisu (`MOCK_PARENT_PROFILE.consents` +
+  `.completedTrips` — jedyne, co w całej apce nadal jest atrapą).
+- **Rozmowa powstaje automatycznie przy akceptacji prośby** (w
+  `useJoinRequests.js`, przy `respond(id, "accepted")`) — to jedyna droga
+  do napisania do kogoś w MVP, zgodnie z zasadą z dokumentu założeń
+  (kontakt dopiero po akceptacji). Nie ma jeszcze ogólnego "napisz do
+  kogokolwiek" ani czatu grupowego (`trip_group_id` w schemacie) — to
+  celowo odłożone, `conversations.kind` obsługuje na razie tylko `ride`/
+  `lodging`.
+- **Bez Supabase Realtime** — zamiast tego proste odpytywanie co 4s,
+  dopóki okno czatu jest otwarte (`useMessages.js`). Prostszy, pewniejszy
+  mechanizm na start niż konfigurowanie replikacji bez możliwości
+  przetestowania na żywo. Do rozważenia później, jeśli odpytywanie okaże
+  się za wolne/kosztowne.
+- **RLS** (`supabase/migrations/0008_messages_rls.sql`) — najbardziej
+  złożona migracja jak dotąd:
+  - `is_conversation_participant()` — funkcja `SECURITY DEFINER`,
+    bo polityka na `conversation_participants` odwołująca się sama do
+    siebie w podzapytaniu powoduje w Postgresie błąd "infinite recursion
+    detected in policy" (udokumentowany, częsty pattern przy tabelach
+    uczestników rozmów).
+  - Dołączenie do `conversation_participants` dozwolone tylko dla dwóch
+    stron ZAAKCEPTOWANEJ prośby (przejazd albo nocleg) — nie da się
+    dodać nikogo innego.
+  - Rozszerzenie widoczności `accounts` (dodatkowa, OR'owana polityka
+    obok tej z 0002) — imię widoczne, gdy dzielimy rozmowę. Telefon
+    nadal nigdzie nieujawniany w UI.
+  **Jeszcze nie uruchomiona w bazie — to jest teraz najważniejsza z
+  zaległych migracji, bez niej żadna rozmowa się nie otworzy.**
+- Build zweryfikowany, ekran logowania bez błędów konsoli — **pełny
+  przepływ (akceptacja → rozmowa → wiadomość) jeszcze nie zweryfikowany
+  na żywo**, wymaga dwóch kont testowych.
+
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
    ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ /
    ~~"Jadę na ten turniej" → trips~~ / ~~import turniejów OTK~~ /
-   ~~Przejazdy~~ / ~~Noclegi~~ / ~~akceptacja próśb (kod)~~ — zrobione
-   (patrz wyżej).
-2. **Zostało do zrobienia przez Ciebie:** potwierdzić `0006_lodging_rls.sql`
-   + uruchomić `0007_join_requests_rls.sql` w SQL Editorze.
-3. Przetestować pełny przepływ prośba → akceptacja — potrzeba **dwóch
-   kont** (np. drugi e-mail), żeby jedna osoba dodała ofertę, a druga
-   poprosiła o dołączenie.
-4. Podłączyć prawdziwe dane pod Wiadomości zamiast `mockData.js` — ostatni
-   ekran na atrapach.
+   ~~Przejazdy~~ / ~~Noclegi~~ / ~~akceptacja próśb~~ / ~~Wiadomości
+   (kod)~~ — zrobione (patrz wyżej). **Wszystkie ekrany apki czytają
+   teraz prawdziwe dane** (poza dwoma polami w profilu rodzica).
+2. **Zostało do zrobienia przez Ciebie:** `0008_messages_rls.sql` w SQL
+   Editorze — bez niej Wiadomości pozostaną puste/zablokowane.
+3. Przetestować pełny przepływ: turniej → wyjazd → oferta → prośba →
+   akceptacja → rozmowa → wiadomość. Potrzeba **dwóch kont** (np. drugi
+   e-mail albo okno incognito).
+4. Zgody i historia wyjazdów w profilu rodzica (`consents` w bazie już
+   istnieje, nic jej jeszcze nie zasila) — ostatni fragment na atrapach.
 5. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.
