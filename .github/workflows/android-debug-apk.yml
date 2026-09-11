@@ -1,9 +1,10 @@
 name: Build Android Debug APK
 
-# Szybki, NIEPODPISANY (debug) build do testowania na własnym telefonie —
-# bez klucza podpisującego (Android Gradle Plugin ma wbudowany domyślny
-# keystore "debug"). Nie nadaje się do Google Play — tam potrzebny będzie
-# android-build.yml z prawdziwym kluczem (patrz PLAN.md).
+# Szybki build do testowania na własnym telefonie, podpisany STAŁYM
+# debug.keystore (patrz android/app/build.gradle i krok "Wygeneruj stały
+# debug.keystore" niżej) — nie kluczem produkcyjnym. Nie nadaje się do
+# Google Play — tam potrzebny będzie android-build.yml z prawdziwym kluczem
+# (patrz PLAN.md).
 #
 # Buduje się automatycznie po każdym pushu na main (jak w projekcie PZT) —
 # zawsze masz świeży APK gotowy do pobrania w zakładce Actions, bez
@@ -14,6 +15,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -32,6 +36,34 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+
+      - name: Wygeneruj stały debug.keystore (jednorazowo, jeśli brak)
+        # Bez tego każdy build CI ma inny, losowo wygenerowany klucz debug
+        # (świeża maszyna GitHub Actions za każdym razem) — Android
+        # traktuje appkę podpisaną innym kluczem jako inną aplikację i
+        # blokuje instalację "aktualizacji" zamiast nadpisać starą wersję.
+        # Dane debug-keystore'a są standardowe i publicznie znane (nie
+        # sekret), więc bezpiecznie commitujemy go do repo — raz.
+        run: |
+          if [ ! -f android/app/debug.keystore ]; then
+            keytool -genkeypair -v \
+              -keystore android/app/debug.keystore \
+              -storepass android -keypass android \
+              -alias androiddebugkey \
+              -keyalg RSA -keysize 2048 -validity 10950 \
+              -dname "CN=Android Debug,O=Android,C=US"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add -f android/app/debug.keystore
+            git commit -m "Dodaj stały debug.keystore (auto, CI) [skip ci]
+
+Bez tego pliku każdy build w GitHub Actions dostawał inny, losowo
+wygenerowany klucz debug — Android blokował instalację 'aktualizacji'
+i wymagał odinstalowania poprzedniej wersji."
+            git push
+          else
+            echo "debug.keystore już istnieje w repo, pomijam."
+          fi
 
       - name: Instalacja zależności
         run: npm ci

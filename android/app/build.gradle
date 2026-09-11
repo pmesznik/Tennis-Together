@@ -13,6 +13,12 @@ if (hasSigningConfig) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+// Stały debug.keystore — patrz szerszy komentarz przy signingConfigs.debug
+// niżej. Jeśli plik jeszcze nie istnieje (np. pierwszy lokalny build zanim
+// CI go wygeneruje), NIE nadpisujemy domyślnego signingConfig Androida —
+// bez tego warunku Gradle wywaliłby się na brakującym pliku.
+def hasFixedDebugKeystore = file('debug.keystore').exists()
+
 // versionCode MUSI rosnąć z każdym wydaniem, inaczej Android przy instalacji
 // "aktualizacji" z tym samym kodem może zignorować nowy APK (patrz notatka
 // w projekcie PZT — dokładnie to się tam stało). CI przekazuje
@@ -46,6 +52,26 @@ android {
                 keyPassword keystoreProperties['keyPassword']
             }
         }
+        debug {
+            // Bez tego Gradle używa domyślnego ~/.android/debug.keystore,
+            // który na maszynie GitHub Actions jest generowany OD ZERA
+            // przy każdym uruchomieniu (świeża maszyna = nowy losowy klucz
+            // za każdym razem). Android traktuje appkę podpisaną innym
+            // kluczem jako INNĄ aplikację i blokuje instalację
+            // "aktualizacji" — trzeba było odinstalować starą wersję
+            // ręcznie (zgłoszone przez Pawła). Plik debug.keystore obok
+            // (wygenerowany raz i zacommitowany, patrz
+            // .github/workflows/android-debug-apk.yml) ze standardowymi,
+            // publicznie znanymi danymi debug-keystore'a Androida — to NIE
+            // jest sekret, każda instalacja Android Studio ma taki sam
+            // domyślnie.
+            if (hasFixedDebugKeystore) {
+                storeFile file('debug.keystore')
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
+        }
     }
     buildTypes {
         release {
@@ -53,6 +79,11 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             if (hasSigningConfig) {
                 signingConfig signingConfigs.release
+            }
+        }
+        debug {
+            if (hasFixedDebugKeystore) {
+                signingConfig signingConfigs.debug
             }
         }
     }

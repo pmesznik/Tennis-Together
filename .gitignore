@@ -7,6 +7,12 @@ __pycache__/
 .env.production
 .claude/
 
-# Sekrety lokalne
+# Sekrety lokalne (klucz PRODUKCYJNY — prawdziwy sekret, nigdy nie commitować)
 *.keystore
 keystore.properties
+
+# WYJĄTEK: stały debug.keystore to NIE jest sekret (standardowe, publicznie
+# znane dane debug-keystore'a Androida — patrz android/app/build.gradle) —
+# musi być w repo, inaczej każdy build CI ma inny losowy klucz i Android
+# blokuje aktualizację "w miejscu" zamiast nadpisać starą wersję.
+!android/app/debug.keystore
