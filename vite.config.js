@@ -16,8 +16,8 @@ export default defineConfig({
         name: "Tennis Together",
         short_name: "Tennis Together",
         description: "Wspólne wyjazdy na turnieje tenisowe — przejazdy, noclegi, grupy.",
-        theme_color: "#0f172a",
-        background_color: "#ffffff",
+        theme_color: "#0d131e",
+        background_color: "#0d131e",
         display: "standalone",
         icons: [
           { src: "/icon-192.png", sizes: "192x192", type: "image/png" },

@@ -1,0 +1,118 @@
+/*
+ * Design tokens — "Neon Court & Cyber Clay" (docs/UX_Branding_Tennis_Together.docx)
+ *
+ * Domyślny jest Dark Mode Premium (zgodnie z dokumentem: ciemne tło oszczędza
+ * baterię w trakcie całodniowych turniejów). Light Mode jest przełącznikiem
+ * ręcznym (przydatny w pełnym słońcu na korcie), nie zależy od ustawień
+ * systemowych telefonu — patrz przełącznik w nagłówku (App.jsx).
+ *
+ * Uwaga przy wdrażaniu realnych ekranów: kontrast tekstu na #D4FF00 i na
+ * #FF5E3A trzeba sprawdzić narzędziem WCAG dla każdego konkretnego użycia
+ * (rozmiar czcionki, tło) — tu ustawione są bezpieczne domyślne pary
+ * (ciemny tekst na jaskrawych akcentach), ale to nie zwalnia z testu przy
+ * pierwszych realnych ekranach z danymi.
+ */
+
+:root {
+  /* Dark Mode Premium — domyślny */
+  --color-bg: #0d131e; /* Deep Court Graphite */
+  --color-bg-elevated: #121a28;
+  --color-card: rgba(22, 32, 50, 0.7); /* "Mrożone Szkło" */
+  --color-card-border: rgba(255, 255, 255, 0.08);
+  --color-text: #f4f6fb;
+  --color-text-muted: #9aa5b8;
+
+  --color-primary: #d4ff00; /* Tennis Ball Neon */
+  --color-primary-text: #0d131e; /* tekst NA przycisku primary */
+  --color-secondary: #ff5e3a; /* Clay Court Coral */
+  --color-secondary-text: #0d131e;
+  --color-verified: #10b981; /* Emerald — odznaka "Parent Verified" */
+  --color-verified-glow: #00f0ff; /* Cyber Cyan — akcent/glow, nie tekst (słaby kontrast) */
+
+  --radius-card: 16px;
+  --blur-glass: 16px;
+
+  --font-heading: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
+
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  /* Light Mode — czytelność w pełnym słońcu na kortach otwartych */
+  --color-bg: #f4f6fb; /* Soft Ice Gray */
+  --color-bg-elevated: #ffffff;
+  --color-card: rgba(255, 255, 255, 0.75);
+  --color-card-border: rgba(13, 19, 30, 0.08);
+  --color-text: #0d131e;
+  --color-text-muted: #586174;
+
+  --color-primary: #7a9400; /* Tennis Ball Neon przyciemniony — AA na jasnym tle */
+  --color-primary-text: #0d131e;
+  --color-secondary: #c2431f; /* Clay Court Coral przyciemniony — kontrast tekstu */
+  --color-secondary-text: #ffffff;
+  --color-verified: #0d7a5f;
+  --color-verified-glow: #0086a8;
+
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+a {
+  color: inherit;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+}
+
+.glass-card {
+  background: var(--color-card);
+  border: 1px solid var(--color-card-border);
+  border-radius: var(--radius-card);
+  backdrop-filter: blur(var(--blur-glass));
+  -webkit-backdrop-filter: blur(var(--blur-glass));
+  padding: 16px;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  cursor: pointer;
+}
+
+.btn-secondary {
+  background: var(--color-secondary);
+  color: var(--color-secondary-text);
+  border: none;
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  cursor: pointer;
+}
+
+.badge-verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-verified);
+  font-size: 12px;
+  font-weight: 600;
+}

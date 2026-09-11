@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Routes, Route, NavLink } from "react-router-dom";
 import StartPage from "./pages/StartPage.jsx";
 import TournamentsPage from "./pages/TournamentsPage.jsx";
@@ -20,11 +21,54 @@ const TABS = [
   { to: "/profil", label: "Profil" },
 ];
 
+const THEME_STORAGE_KEY = "tennis-together-theme";
+
+// Dark Mode Premium jest domyślny z dokumentu UX (docs/UX_Branding_Tennis_Together.docx) —
+// Light Mode jest świadomym wyborem użytkownika (np. pełne słońce na korcie),
+// nie wynika z ustawień systemowych telefonu.
+function useTheme() {
+  const [theme, setTheme] = useState(
+    () => localStorage.getItem(THEME_STORAGE_KEY) || "dark"
+  );
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  }, [theme]);
+
+  return [theme, setTheme];
+}
+
 export default function App() {
+  const [theme, setTheme] = useTheme();
+
   return (
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
-      <header style={{ padding: "16px", borderBottom: "1px solid #e2e8f0" }}>
-        <strong>🎾 Tennis Together</strong>
+      <header
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "16px",
+          borderBottom: "1px solid var(--color-card-border)",
+        }}
+      >
+        <strong style={{ fontFamily: "var(--font-heading)" }}>🎾 Tennis Together</strong>
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          aria-label="Przełącz tryb jasny/ciemny"
+          style={{
+            background: "transparent",
+            border: "1px solid var(--color-card-border)",
+            color: "var(--color-text)",
+            borderRadius: 999,
+            padding: "6px 12px",
+            cursor: "pointer",
+            fontSize: 13,
+          }}
+        >
+          {theme === "dark" ? "☀️ Jasny" : "🌙 Ciemny"}
+        </button>
       </header>
 
       <main style={{ flex: 1, padding: "16px" }}>
@@ -43,8 +87,8 @@ export default function App() {
         style={{
           display: "flex",
           overflowX: "auto",
-          borderTop: "1px solid #e2e8f0",
-          background: "#fff",
+          borderTop: "1px solid var(--color-card-border)",
+          background: "var(--color-bg-elevated)",
           position: "sticky",
           bottom: 0,
         }}
@@ -61,9 +105,9 @@ export default function App() {
               textDecoration: "none",
               fontSize: 13,
               whiteSpace: "nowrap",
-              color: isActive ? "#0f172a" : "#64748b",
-              fontWeight: isActive ? 600 : 400,
-              borderTop: isActive ? "2px solid #0f172a" : "2px solid transparent",
+              color: isActive ? "var(--color-primary)" : "var(--color-text-muted)",
+              fontWeight: isActive ? 700 : 400,
+              borderTop: isActive ? "2px solid var(--color-primary)" : "2px solid transparent",
             })}
           >
             {tab.label}

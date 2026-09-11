@@ -22,6 +22,11 @@ create table accounts (
   phone text,
   city text,
   club_name text,
+  -- Odznaka "Parent Verified" z docs/UX_Branding_Tennis_Together.docx.
+  -- W MVP weryfikacja = potwierdzony telefon/e-mail (nie dokument tożsamości —
+  -- to dopiero przy "nocleg u rodziny" w etapie 2, patrz PLAN.md).
+  verified boolean not null default false,
+  verified_at timestamptz,
   created_at timestamptz not null default now()
 );
 

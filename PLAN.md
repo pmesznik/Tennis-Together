@@ -38,6 +38,32 @@ w `docs/ATZ_Aplikacja_Zawodnicy_Rodzice_Zalozenia.docx`.
   testowego.
 - **Monetyzacja:** brak w MVP, całkowicie bezpłatne na start.
 
+## Identyfikacja wizualna (UX/branding)
+
+Koncepcja graficzna przygotowana przez Pawła:
+`docs/UX_Branding_Tennis_Together.docx` ("Neon Court & Cyber Clay").
+Wdrożona jako design tokens w `src/styles/tokens.css` + demo na stronie Start.
+
+- **Styl:** glassmorphism, Dark Mode Premium domyślnie (oszczędza baterię na
+  całodniowych turniejach), Light Mode jako ręczny przełącznik (czytelność w
+  słońcu na korcie) — nie podłączony pod ustawienia systemowe telefonu.
+- **Paleta:** Tennis Ball Neon `#D4FF00` (primary), Clay Court Coral `#FF5E3A`
+  (secondary), Emerald/Cyan (`#10B981` / `#00F0FF`) na odznakę "Parent
+  Verified", Deep Court Graphite `#0D131E` (tło dark), Soft Ice Gray `#F4F6FB`
+  (tło light).
+- **Odstępstwo od dokumentu:** w light mode odcienie neonu i koralu są
+  przyciemnione (`#7A9400`, `#C2431F`) względem oryginalnych kodów — surowe
+  `#D4FF00`/`#FF5E3A` nie dają wystarczającego kontrastu tekstu na jasnym tle
+  (WCAG AA). Na dark mode oryginalne kolory zostają.
+- **Typografia:** nagłówki Plus Jakarta Sans, treść Inter — oba darmowe
+  (Google Fonts). Dokument proponował też płatny Clash Display do nagłówków;
+  pominięty na start ze względu na ograniczony budżet, do rozważenia później.
+- **"Parent Verified":** w MVP to weryfikacja telefonu/e-maila (kolumna
+  `accounts.verified` w schemacie), nie weryfikacja dokumentu tożsamości —
+  ta cięższa wersja ma sens przy "noclegu u rodziny" w etapie 2.
+- Nazwa w dokumencie brzmi "Tennis Trip" (robocza nazwa z wcześniejszego
+  etapu) — w kodzie i repo zostaje ustalone "Tennis Together".
+
 ## Architektura
 
 | Warstwa | Wybór |
