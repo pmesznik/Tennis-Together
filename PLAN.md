@@ -529,6 +529,45 @@ jedzie"). Zbadane i zaimplementowane tego samego dnia:
   z resztą filtrów placeholder; do przywrócenia dopiero z prawdziwym
   geokodowaniem, żeby nie było martwego przycisku.
 
+## Etykieta „PZT" zamiast „OTK" (2026-09-11)
+
+Na prośbę Pawła: nazwa źródła wyświetlana w UI (chip filtra + odznaka na
+karcie turnieju) zmieniona z „OTK" na „PZT" (`SOURCE_LABELS` w
+`useTournaments.js`, `SOURCES` w `TournamentsPage.jsx`). Wartość w bazie
+(`source='otk'`) i nazwy plików/komentarzy w kodzie zostają bez zmian —
+to tylko kosmetyka wyświetlania, OTK to nadal właściwa nazwa kategorii
+turniejowej PZT.
+
+## Import Tennis Europe — potwierdzony na żywo (2026-09-11)
+
+Workflow uruchomiony przez Pawła, zakończony sukcesem, dane widoczne w
+appce: turnieje z Niemiec, Mołdawii i innych krajów, z prawdziwymi
+zakresami dat, filtr krajów pokazuje 30+ pozycji po polsku. **Pierwsze
+prawdziwe potwierdzenie działania od początku do końca.**
+
+## ITF — sprawdzone, zostaje ręczne (2026-09-11)
+
+Paweł podesłał link do kalendarza ITF, ale to była zła gałąź (World
+Tennis Tour = dorosły tour zawodowy, nie junior). Znaleziony właściwy:
+[world-tennis-tour-juniors-calendar](https://www.itftennis.com/en/tournament-calendar/world-tennis-tour-juniors-calendar/)
+(kategorie J30–J300, polskie turnieje też tam są). Ma nawet czyste REST
+API (`tennis/api/TournamentApi/GetCalendar?circuitCode=JT`, JSON,
+świetna struktura danych z prawdziwymi datami start/koniec) — ale **strona
+jest chroniona przez Imperva Incapsula** (prawdziwy system anty-bot,
+wymagający rozwiązywania wyzwań JS). Pierwsze zapytanie przeszło
+przypadkiem, każde kolejne — nawet z pełną sesją/ciasteczkami jak z
+przeglądarki — zostało zablokowane.
+
+**Decyzja: nie próbujemy tego obchodzić.** Świadome omijanie
+zabezpieczeń strony trzeciej (w odróżnieniu od PZT/Tennis Europe, które
+w ogóle nie mają takiej ochrony) ryzykowałoby trwałym zbanowaniem naszego
+adresu IP (też z GitHub Actions) i jest inną kategorią działania niż
+zwykłe scrapowanie otwartych stron. **ITF zostaje ręczne/przez
+zgłoszenia** — zgodnie z pierwotnym planem z dokumentu założeń, teraz
+już świadomie potwierdzonym, nie tylko domyślnie przyjętym. Jedyna
+uczciwa droga do automatyzacji w przyszłości: oficjalne API partnerskie
+ITF (nie sprawdzane, czy istnieje).
+
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
@@ -536,16 +575,15 @@ jedzie"). Zbadane i zaimplementowane tego samego dnia:
    ~~"Jadę na ten turniej" → trips~~ / ~~import turniejów OTK~~ /
    ~~Przejazdy~~ / ~~Noclegi~~ / ~~akceptacja próśb~~ / ~~Wiadomości~~ /
    ~~pełny test na dwóch kontach~~ / ~~edycja profilu~~ /
-   ~~import Tennis Europe (kod)~~ — zrobione (patrz wyżej).
-2. **Zostało do zrobienia przez Ciebie:** uruchomić workflow „Import
-   turniejów Tennis Europe" ręcznie (Actions → ten workflow → Run
-   workflow) — sprawdzę wynik i zdam raport.
-3. „Znajdź turniej po uczestniku z mojej okolicy" (patrz wyżej) — kolejny
-   kawałek pracy nad wyszukiwarką, jeszcze nie zaczęty.
-4. Zgody i historia wyjazdów w profilu rodzica (`consents` w bazie już
+   ~~import Tennis Europe~~ / ~~sprawdzenie ITF~~ — zrobione i
+   **import Tennis Europe potwierdzony na żywo** (patrz wyżej).
+2. „Znajdź turniej po uczestniku z mojej okolicy" — kolejny kawałek pracy
+   nad wyszukiwarką, jeszcze nie zaczęty (szkic wyżej, sekcja "Turnieje
+   Tennis Europe").
+3. Zgody i historia wyjazdów w profilu rodzica (`consents` w bazie już
    istnieje, nic jej jeszcze nie zasila) — czeka pośrednio na prawnika
    (treść zgody musi pochodzić z regulaminu, którego jeszcze nie mamy).
-5. Możliwość **wycofania własnej prośby** o dołączenie (RLS już na to
+4. Możliwość **wycofania własnej prośby** o dołączenie (RLS już na to
    pozwala, `for delete` w 0007, UI jeszcze nie ma przycisku).
-6. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
+5. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.
