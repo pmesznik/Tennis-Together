@@ -180,16 +180,13 @@ model biznesowy (z dokumentu założeń, sekcje 19–21).
   + `ProfilePage.jsx`): dodawanie zawodnika (imię, nazwisko, rok urodzenia,
   kategoria, klub, miasto — opcjonalne pola), przełącznik między kilkoma
   dziećmi tego samego rodzica, formularz od razu widoczny, gdy lista jest
-  pusta. Zapisane w `players`, chronione RLS (patrz niżej). **Nie
-  zweryfikowane jeszcze na żywo w przeglądarce** — wymaga prawdziwej,
-  potwierdzonej sesji, której nie mam jak sam wytworzyć (brak dostępu do
-  Twojej skrzynki). Build produkcyjny przechodzi bez błędów. Do sprawdzenia
-  przy Twoim najbliższym logowaniu: zakładka „Zawodnik” w Profilu.
-- **RLS uzupełnione o `accounts`** — była to jedyna otwarta tabela z
+  pusta. Zapisane w `players`, chronione RLS. **Zweryfikowane na żywo przez
+  Pawła 2026-09-11** — rejestracja, potwierdzenie e-maila, logowanie i
+  dodanie zawodnika przeszły bez problemu.
+- **RLS uzupełnione o `accounts`** (`supabase/migrations/0002_accounts_rls.sql`,
+  uruchomiona przez Pawła w SQL Editorze) — była to jedyna otwarta tabela z
   prawdziwym zagrożeniem prywatności (każdy z publicznym kluczem anon mógł
-  czytać/nadpisywać cudze konta, w tym telefony). Nowa migracja:
-  `supabase/migrations/0002_accounts_rls.sql` — **jeszcze nie uruchomiona w
-  bazie, trzeba wkleić ją w SQL Editor tak samo jak 0001**.
+  czytać/nadpisywać cudze konta, w tym telefony).
   Pozostałe tabele (`trips`, `ride_offers`, `conversations`, `messages`...)
   są nadal otwarte, ale świadomie odłożone — żadna z nich nie jest jeszcze
   podłączona pod prawdziwe zapytania (dalej korzystają z `mockData.js`),
@@ -204,14 +201,15 @@ model biznesowy (z dokumentu założeń, sekcje 19–21).
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
-   ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ — zrobione, patrz
-   wyżej. **Zostało do zrobienia przez Ciebie:** uruchomić
-   `0002_accounts_rls.sql` w SQL Editorze (jak przy 0001) i przetestować
-   dodawanie zawodnika po zalogowaniu na prawdziwe konto.
-2. Uzupełniać RLS na kolejnych tabelach w miarę podłączania realnych
-   ekranów (patrz wyżej) — nie hurtowo na raz.
-3. Przenieść/zaadaptować scraper OTK z projektu PZT do zasilania `tournaments`.
+   ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ — zrobione i
+   potwierdzone na żywo (patrz wyżej).
+2. **W trakcie:** scraper OTK z projektu PZT → `tournaments` w Supabase +
+   RLS (publiczny odczyt, zapis tylko przez `service_role` w GitHub
+   Actions) + zasilenie zakładki Turnieje prawdziwymi danymi zamiast
+   `mockData.js`.
+3. Uzupełniać RLS na kolejnych tabelach w miarę podłączania realnych
+   ekranów — nie hurtowo na raz.
 4. Podłączyć prawdziwe dane pod pozostałe ekrany (Przejazdy, Noclegi, Moje
    wyjazdy, Wiadomości) zamiast `src/mockData.js`.
-6. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
+5. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.
