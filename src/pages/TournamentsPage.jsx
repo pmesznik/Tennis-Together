@@ -9,7 +9,7 @@ import { inputStyle, labelStyle } from "../components/formStyles.js";
 
 const SOURCES = [
   { key: "all", label: "Wszystkie" },
-  { key: "otk", label: "OTK" },
+  { key: "otk", label: "PZT" },
   { key: "tennis_europe", label: "Tennis Europe" },
   { key: "itf", label: "ITF" },
 ];

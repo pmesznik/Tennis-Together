@@ -42,7 +42,7 @@ export function useTournaments() {
   return { tournaments, loading, error };
 }
 
-const SOURCE_LABELS = { otk: "OTK", tennis_europe: "Tennis Europe", itf: "ITF", manual: "Inne" };
+const SOURCE_LABELS = { otk: "PZT", tennis_europe: "Tennis Europe", itf: "ITF", manual: "Inne" };
 
 export function sourceLabel(source) {
   return SOURCE_LABELS[source] ?? source;
