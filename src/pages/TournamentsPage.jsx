@@ -24,13 +24,25 @@ function formatRange(startsOn, endsOn) {
 
 export default function TournamentsPage() {
   const [source, setSource] = useState("all");
+  const [category, setCategory] = useState("all");
+  const [country, setCountry] = useState("all");
   const [openTournamentId, setOpenTournamentId] = useState(null);
   const { tournaments, loading, error } = useTournaments();
   const { account } = useAuth();
   const { players, loading: playersLoading } = usePlayers(account?.id);
   const { trips, createTrip } = useTrips(account?.id);
 
-  const visible = tournaments.filter((t) => source === "all" || t.source === source);
+  // Listy do filtrów wyliczone z tego, co faktycznie jest w kalendarzu —
+  // nie na sztywno, bo OTK i Tennis Europe mają różne zestawy kategorii/krajów.
+  const categories = [...new Set(tournaments.map((t) => t.category).filter(Boolean))].sort();
+  const countries = [...new Set(tournaments.map((t) => t.country).filter(Boolean))].sort();
+
+  const visible = tournaments.filter(
+    (t) =>
+      (source === "all" || t.source === source) &&
+      (category === "all" || t.category === category) &&
+      (country === "all" || t.country === country)
+  );
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -46,9 +58,32 @@ export default function TournamentsPage() {
             {s.label}
           </button>
         ))}
-        <button className="chip">📍 Dystans</button>
-        <button className="chip">🎾 Kategoria wiekowa</button>
       </div>
+
+      {(categories.length > 0 || countries.length > 0) && (
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          {categories.length > 0 && (
+            <select style={{ ...inputStyle, width: "auto" }} value={category} onChange={(e) => setCategory(e.target.value)}>
+              <option value="all">Wszystkie kategorie</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          )}
+          {countries.length > 0 && (
+            <select style={{ ...inputStyle, width: "auto" }} value={country} onChange={(e) => setCountry(e.target.value)}>
+              <option value="all">Wszystkie kraje</option>
+              {countries.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
 
       {error && <ErrorBox>Nie udało się wczytać turniejów: {error}</ErrorBox>}
       {loading && <p style={{ color: "var(--color-text-muted)" }}>Wczytywanie…</p>}
@@ -122,9 +157,9 @@ export default function TournamentsPage() {
       )}
 
       <p style={{ color: "var(--color-text-muted)", fontSize: 12 }}>
-        Kalendarz OTK jest importowany automatycznie codziennie ze scrapera
-        PZT. Tennis Europe i ITF na start dodawane ręcznie / przez zgłoszenia
-        (patrz PLAN.md).
+        Kalendarz OTK i Tennis Europe jest importowany automatycznie
+        codziennie (scraper PZT + te.tournamentsoftware.com). ITF na start
+        dodawane ręcznie / przez zgłoszenia (patrz PLAN.md).
       </p>
     </div>
   );

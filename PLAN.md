@@ -479,21 +479,73 @@ danych, które dopiero za chwilę powstaną.
 - **Dane testowe wyczyszczone** — `delete from trips;` (kaskada usunęła
   oferty/prośby/rozmowy/wiadomości), konta i zawodnicy (Ala/Jag) zostały.
 
+## Turnieje Tennis Europe (2026-09-11)
+
+Zgłoszone przez Pawła: po turniejach polskich trzeba dodać europejskie +
+mądrą wyszukiwarkę (kraj, kategoria, i docelowo "kto z mojej okolicy tam
+jedzie"). Zbadane i zaimplementowane tego samego dnia:
+
+- **`scripts/import_tennis_europe.py`** — scraper `te.tournamentsoftware.com`
+  (platforma "Tournament Software", osobna od `tenniseurope.org`, ale
+  podlinkowana z niego jako "Calendar & Results"). W przeciwieństwie do OTK:
+  - jedno zapytanie POST zwraca turnieje z **całej Europy naraz**
+    (`CountryCode` puste = wszystkie kraje) — nie trzeba pętli po krajach;
+  - dostajemy **prawdziwą datę zakończenia**, nie tylko startu (OTK tego
+    nie dawał);
+  - HTML odpowiedzi jest czysty i ustrukturyzowany (klasy CSS,
+    `<time datetime="...">`) — dużo łatwiejszy do parsowania niż OTK.
+  - **Paginacja jest kumulatywna** (Page=N zwraca wszystko od 1 do N naraz,
+    zweryfikowane ręcznie: Page=10/15/20 dały identyczne 126 wyników) —
+    skrypt eskaluje 1→3→9→27 zamiast pętli liniowej, zatrzymuje się, gdy
+    liczba wyników przestaje rosnąć. Cały kalendarz (126 turniejów, 35
+    krajów, ~9 miesięcy naprzód) w 4 zapytaniach.
+  - Kraj tłumaczony z angielskiego na polski (`COUNTRY_PL`, ~50 wpisów) —
+    spójność z OTK, gdzie kraj to zawsze "Polska".
+  - **Przetestowane lokalnie na żywo** (dry-run, bez zapisu): 126/126
+    turniejów z kompletnymi danymi (miasto, kraj, kategoria, obie daty).
+    Nieudokumentowane, prywatne API strony trzeciej — jeśli kiedyś zacznie
+    zwracać 0 wyników, sprawdzić najpierw czy struktura się nie zmieniła.
+  - Migracja bazy **niepotrzebna** — `source='tennis_europe'` był już
+    dopuszczony przez CHECK constraint od 0001_init.sql.
+- **`.github/workflows/import-tennis-europe.yml`** — cron 2:30 UTC (pół
+  godziny po OTK) + ręcznie, ten sam sekret `SUPABASE_SERVICE_ROLE_KEY`.
+  **Jeszcze nie uruchomiony na żywo w Supabase** — czeka na ręczne
+  „Run workflow" (albo najbliższy cron).
+- **Filtry w `TournamentsPage.jsx`** — kategoria i kraj jako `<select>`,
+  listy wyliczane dynamicznie z tego, co faktycznie jest w kalendarzu (nie
+  na sztywno), więc automatycznie obejmą wszystkie 35 krajów po imporcie.
+  Zweryfikowane na żywo (na razie tylko "Polska" widoczna, bo import TE
+  jeszcze nie uruchomiony).
+- **Jeszcze NIE zrobione — świadomie odłożone jako osobny kawałek pracy:**
+  „Znajdź turniej po uczestniku z mojej okolicy" — pomysł Pawła, żeby
+  zamiast (albo obok) filtrowania po kraju/kategorii dało się znaleźć
+  turnieje, na które ktoś już jedzie z pobliskiej miejscowości. Szkic
+  projektu: dopasowanie po `trips.departure_city` (tekstowe, bez
+  geokodowania na start — kolumny `departure_lat`/`departure_lng` już
+  istnieją w schemacie, ale puste; prawdziwe dopasowanie "w promieniu X km"
+  wymagałoby geokodowania miast, np. darmowym Nominatim — osobna decyzja
+  na później). Nie zaczęte — do zrobienia w kolejnej turze.
+- **📍 Dystans (przycisk w Turnieje)** — usunięty w tej rundzie zmian razem
+  z resztą filtrów placeholder; do przywrócenia dopiero z prawdziwym
+  geokodowaniem, żeby nie było martwego przycisku.
+
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
    ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ /
    ~~"Jadę na ten turniej" → trips~~ / ~~import turniejów OTK~~ /
    ~~Przejazdy~~ / ~~Noclegi~~ / ~~akceptacja próśb~~ / ~~Wiadomości~~ /
-   ~~pełny test na dwóch kontach~~ / ~~edycja profilu~~ — zrobione i
-   **potwierdzone na żywo** (patrz wyżej).
-2. Zgody i historia wyjazdów w profilu rodzica (`consents` w bazie już
-   istnieje, nic jej jeszcze nie zasila) — jedyny fragment nadal na
-   atrapach. Czeka pośrednio na prawnika (prawdziwa treść zgody musi
-   pochodzić z regulaminu, którego jeszcze nie mamy) — sam mechanizm
-   zapisu dałoby się zbudować wcześniej, ale bez treści zgody nie ma co
-   pokazywać do zaakceptowania.
-3. Możliwość **wycofania własnej prośby** o dołączenie (RLS już na to
+   ~~pełny test na dwóch kontach~~ / ~~edycja profilu~~ /
+   ~~import Tennis Europe (kod)~~ — zrobione (patrz wyżej).
+2. **Zostało do zrobienia przez Ciebie:** uruchomić workflow „Import
+   turniejów Tennis Europe" ręcznie (Actions → ten workflow → Run
+   workflow) — sprawdzę wynik i zdam raport.
+3. „Znajdź turniej po uczestniku z mojej okolicy" (patrz wyżej) — kolejny
+   kawałek pracy nad wyszukiwarką, jeszcze nie zaczęty.
+4. Zgody i historia wyjazdów w profilu rodzica (`consents` w bazie już
+   istnieje, nic jej jeszcze nie zasila) — czeka pośrednio na prawnika
+   (treść zgody musi pochodzić z regulaminu, którego jeszcze nie mamy).
+5. Możliwość **wycofania własnej prośby** o dołączenie (RLS już na to
    pozwala, `for delete` w 0007, UI jeszcze nie ma przycisku).
-4. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
+6. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.
