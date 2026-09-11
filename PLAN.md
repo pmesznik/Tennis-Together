@@ -72,6 +72,17 @@ Wdrożona jako design tokens w `src/styles/tokens.css` + demo na stronie Start.
   ta cięższa wersja ma sens przy "noclegu u rodziny" w etapie 2.
 - Nazwa w dokumencie brzmi "Tennis Trip" (robocza nazwa z wcześniejszego
   etapu) — w kodzie i repo zostaje ustalone "Tennis Together".
+- **Ikona aplikacji** (2026-09-11, dostarczona przez Pawła):
+  `docs/app-icon-source.png` (1254×1254, niebieska zaokrąglona plakietka —
+  piłka tenisowa + ludzie + samolot/auto). Wygenerowane z niej automatycznie:
+  `public/icon-192.png` / `icon-512.png` (PWA, przezroczyste narożniki) oraz
+  komplet ikon Androida (`android/app/src/main/res/mipmap-*`) — legacy
+  `ic_launcher`/`ic_launcher_round` per gęstość + adaptive icon
+  (`ic_launcher_foreground` zmniejszony do 68% wewnątrz "safe zone", żeby
+  żadna maska launchera — koło, squircle — nie ucinała samolotu/auta na
+  krawędziach; tło adaptacyjne ustawione na dominujący niebieski z ikony,
+  `#074BA8`). Nie dotyka to kolorystyki UI w apce (`tokens.css`) — ikona ma
+  świadomie inną, własną kolorystykę niż "Neon Court" w środku.
 
 ## Architektura
 
