@@ -222,6 +222,31 @@ model biznesowy (z dokumentu założeń, sekcje 19–21).
   (czeka na migrację 0003 + pierwszy import + Twoją prawdziwą sesję).
   Przycisk „Jadę na ten turniej” nadal nic nie zapisuje (patrz niżej).
 
+## Android — lekcje przeniesione z projektu PZT (2026-09-11)
+
+Trzy problemy, na które PZT Rankingi wpadło dopiero po fakcie (i wymagały
+naprawy w locie) — tu zaadresowane od razu, zanim zdążyły się ujawnić:
+
+- **Paski systemowe zasłaniały appkę** (`viewport-fit=cover` bez
+  `env(safe-area-inset-*)` na nagłówku/dolnym menu/ekranie logowania) —
+  naprawione w `App.jsx` i `AuthPage.jsx`. Zgłoszone przez Pawła po
+  zainstalowaniu pierwszego debug APK.
+- **Service Worker rejestrujący się też wewnątrz natywnej apki** — w PZT
+  powodowało to "utkniętą" starą wersję po aktualizacji (stary SW w WebView
+  przechwytywał żądania). Tu zapobieżone prewencyjnie: `injectRegister: null`
+  w `vite.config.js` + rejestracja w `main.jsx` tylko gdy
+  `!Capacitor.isNativePlatform()`.
+- **`versionCode` zaszyty na sztywno** — w PZT był "1" od pierwszego builda,
+  co też blokowało aktualizacje. Tu: `build.gradle` czyta go z
+  `-PappVersionCode` (numer przebiegu CI), ale trzeba pamiętać, żeby ta
+  flaga była w **każdym** workflow budującym APK — przy pierwszym labie tej
+  naprawy zapomniałem jej dodać do `android-debug-apk.yml` (dodał tylko do
+  `android-build.yml`), poprawione tego samego dnia.
+
+Pełny opis wzorca (do zastosowania w KOLEJNYCH projektach Capacitor od
+pierwszego dnia, nie po fakcie) zapisany w pamięci: `android-safe-area-insets`
+i `capacitor-sw-versioncode`.
+
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
