@@ -7,6 +7,7 @@ import LodgingPage from "./pages/LodgingPage.jsx";
 import TripsPage from "./pages/TripsPage.jsx";
 import MessagesPage from "./pages/MessagesPage.jsx";
 import ProfilePage from "./pages/ProfilePage.jsx";
+import ClubPage from "./pages/ClubPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 import { useAuth } from "./lib/AuthContext.jsx";
 
@@ -22,6 +23,10 @@ const TABS = [
   { to: "/wiadomosci", label: "Wiadomości" },
   { to: "/profil", label: "Profil" },
 ];
+
+// Zakładka "Klub" dochodzi tylko dla roli `coach` (PLAN.md, panel
+// trenera/klubu) — reszcie użytkowników niepotrzebnie zaśmiecałaby menu.
+const COACH_TAB = { to: "/klub", label: "Klub" };
 
 const THEME_STORAGE_KEY = "tennis-together-theme";
 
@@ -43,7 +48,7 @@ function useTheme() {
 
 export default function App() {
   const [theme, setTheme] = useTheme();
-  const { session, loading } = useAuth();
+  const { session, loading, account } = useAuth();
 
   if (loading) {
     return (
@@ -107,6 +112,7 @@ export default function App() {
           <Route path="/moje-wyjazdy" element={<TripsPage />} />
           <Route path="/wiadomosci" element={<MessagesPage />} />
           <Route path="/profil" element={<ProfilePage />} />
+          <Route path="/klub" element={<ClubPage />} />
         </Routes>
       </main>
 
@@ -123,7 +129,7 @@ export default function App() {
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
-        {TABS.map((tab) => (
+        {(account?.role === "coach" ? [...TABS, COACH_TAB] : TABS).map((tab) => (
           <NavLink
             key={tab.to}
             to={tab.to}
