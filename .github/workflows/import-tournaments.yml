@@ -1,0 +1,40 @@
+name: Import turniejów OTK
+
+# Pobiera kalendarz turniejów OTK z portal.pzt.pl i zapisuje/aktualizuje je
+# w tabeli `tournaments` w Supabase. Patrz scripts/import_tournaments.py.
+#
+# Wymaga sekretu (Settings → Secrets and variables → Actions):
+#   SUPABASE_SERVICE_ROLE_KEY
+# (Project Settings → API Keys w panelu Supabase — klucz "secret"/service_role,
+# NIE ten sam co VITE_SUPABASE_ANON_KEY w aplikacji. Ten klucz omija RLS,
+# więc nie wklejaj go nigdzie indziej niż w sekretach GitHub Actions.)
+#
+# Codziennie o 4:00 czasu polskiego (2:00 UTC — bez uwzględniania czasu
+# letniego, więc realnie 3:00 lub 4:00 w zależności od pory roku, co jest
+# bez znaczenia dla kalendarza turniejów) + ręcznie z zakładki Actions.
+
+on:
+  schedule:
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pobierz kod
+        uses: actions/checkout@v7
+
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Instalacja zależności
+        run: pip install -r scripts/requirements.txt
+
+      - name: Import turniejów
+        env:
+          SUPABASE_URL: https://jrabxtiranllayerhutm.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python scripts/import_tournaments.py

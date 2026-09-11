@@ -198,18 +198,45 @@ model biznesowy (z dokumentu założeń, sekcje 19–21).
   zaloguje) — do usunięcia w Authentication → Users w panelu Supabase,
   jeśli przeszkadza.
 
+## Import turniejów OTK (2026-09-11)
+
+- `scripts/import_tournaments.py` — port scrapera `scrape_tournaments_list()`
+  z projektu PZT (bez logowania do PZT, bez pola "registration"). **Przetestowany
+  na żywo** przeciwko portal.pzt.pl (lokalnie, dry-run): 53 turnieje w 4
+  kategoriach (U12/U14/U16/U18), poprawne polskie znaki, kilka wpisów bez
+  miasta (np. mistrzostwa drużynowe) — stąd decyzja, żeby `city` było
+  nullable. Ten widok PZT nigdy nie podaje daty zakończenia turnieju, więc
+  `ends_on` też jest nullable (wolimy pokazać "nieznana" niż zgadywać złą datę).
+- `supabase/migrations/0003_tournaments.sql` — powyższe zmiany kolumn + RLS
+  na `tournaments` (publiczny odczyt dla zalogowanych, zapis tylko przez
+  `service_role`). **Jeszcze nie uruchomiona w bazie.**
+- `.github/workflows/import-tournaments.yml` — cron codziennie o 2:00 UTC +
+  ręczne uruchomienie. **Wymaga sekretu `SUPABASE_SERVICE_ROLE_KEY`** w
+  Settings → Secrets and variables → Actions (klucz "secret"/service_role z
+  Project Settings → API Keys w Supabase — inny niż `VITE_SUPABASE_ANON_KEY`
+  używany w appce; ten omija RLS, więc tylko jako sekret CI, nigdy w `.env`).
+- Zakładka Turnieje (`TournamentsPage.jsx` + `src/lib/useTournaments.js`)
+  czyta już prawdziwe dane z `tournaments` zamiast `mockData.js`. Build
+  przechodzi, ekran logowania (niezależny od tej zmiany) zweryfikowany bez
+  błędów konsoli — **pełny widok z danymi jeszcze nie zweryfikowany na żywo**
+  (czeka na migrację 0003 + pierwszy import + Twoją prawdziwą sesję).
+  Przycisk „Jadę na ten turniej” nadal nic nie zapisuje (patrz niżej).
+
 ## Następne kroki
 
 1. ~~Uzupełnić `.env`~~ / ~~uruchomić `0001_init.sql`~~ / ~~logowanie~~ /
    ~~ekran dodawania zawodnika~~ / ~~RLS na `accounts`~~ — zrobione i
    potwierdzone na żywo (patrz wyżej).
-2. **W trakcie:** scraper OTK z projektu PZT → `tournaments` w Supabase +
-   RLS (publiczny odczyt, zapis tylko przez `service_role` w GitHub
-   Actions) + zasilenie zakładki Turnieje prawdziwymi danymi zamiast
-   `mockData.js`.
-3. Uzupełniać RLS na kolejnych tabelach w miarę podłączania realnych
+2. **Zostało do zrobienia przez Ciebie:** uruchomić
+   `0003_tournaments.sql` w SQL Editorze, dodać sekret
+   `SUPABASE_SERVICE_ROLE_KEY` w GitHub, uruchomić workflow „Import
+   turniejów OTK” ręcznie (Actions → ten workflow → Run workflow) i
+   sprawdzić zakładkę Turnieje.
+3. „Jadę na ten turniej” → utworzenie wiersza w `trips` (dziś tylko UI, nic
+   nie zapisuje) — naturalny następny krok po zweryfikowaniu importu.
+4. Uzupełniać RLS na kolejnych tabelach w miarę podłączania realnych
    ekranów — nie hurtowo na raz.
-4. Podłączyć prawdziwe dane pod pozostałe ekrany (Przejazdy, Noclegi, Moje
+5. Podłączyć prawdziwe dane pod pozostałe ekrany (Przejazdy, Noclegi, Moje
    wyjazdy, Wiadomości) zamiast `src/mockData.js`.
-5. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
+6. Znaleźć prawnika do regulaminu/polityki prywatności/DPIA — zanim ruszy
    zamknięta beta z udziałem osób spoza ATZ.
