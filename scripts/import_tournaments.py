@@ -178,7 +178,12 @@ def upsert_tournaments(rows: list[dict], supabase_url: str, service_role_key: st
 
 def main() -> int:
     supabase_url = os.environ.get("SUPABASE_URL", "").strip()
-    service_role_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
+    # Klucze API nigdy legalnie nie zawierają białych znaków — usuwamy
+    # WSZYSTKIE (nie tylko na brzegach), żeby przypadkowy znak nowej linii
+    # wklejony razem z sekretem w GitHub Secrets (częste przy kopiowaniu
+    # "na oko" zamiast przyciskiem kopiowania) nie psuł nagłówka HTTP
+    # niezrozumiałym błędem InvalidHeader.
+    service_role_key = re.sub(r"\s+", "", os.environ.get("SUPABASE_SERVICE_ROLE_KEY", ""))
     if not supabase_url or not service_role_key:
         print("Brak SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY w środowisku.", file=sys.stderr)
         return 1
