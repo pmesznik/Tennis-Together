@@ -116,3 +116,163 @@ h1, h2, h3, h4 {
   font-size: 12px;
   font-weight: 600;
 }
+
+/* ── Komponenty wspólne dla list/filtrów (Turnieje, Przejazdy, Noclegi) ── */
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-card-border);
+  border-radius: 999px;
+  padding: 10px 20px;
+  font-weight: 700;
+  font-family: var(--font-heading);
+  cursor: pointer;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--color-card-border);
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.chip.is-active {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.chip-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.segmented {
+  display: flex;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-card-border);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+}
+
+.segmented button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--color-text-muted);
+  border-radius: 999px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-heading);
+  cursor: pointer;
+}
+
+.segmented button.is-active {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  padding: 3px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-pill.ok {
+  background: color-mix(in srgb, var(--color-verified) 18%, transparent);
+  color: var(--color-verified);
+}
+
+.status-pill.pending {
+  background: color-mix(in srgb, var(--color-secondary) 18%, transparent);
+  color: var(--color-secondary);
+}
+
+.status-pill.muted {
+  background: var(--color-bg-elevated);
+  color: var(--color-text-muted);
+}
+
+.card-disabled {
+  opacity: 0.55;
+  position: relative;
+}
+
+.card-disabled::after {
+  content: "Etap 2 — wkrótce";
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  border: 1px solid var(--color-card-border);
+  border-radius: 999px;
+  padding: 2px 10px;
+  background: var(--color-bg-elevated);
+}
+
+.avatar-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-card-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.chat-bubble {
+  max-width: 78%;
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.chat-bubble.theirs {
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-card-border);
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+}
+
+.chat-bubble.mine {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--color-card-border);
+  background: var(--color-bg-elevated);
+  color: inherit;
+  font: inherit;
+}
