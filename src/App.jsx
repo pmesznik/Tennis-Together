@@ -48,7 +48,7 @@ function useTheme() {
 
 export default function App() {
   const [theme, setTheme] = useTheme();
-  const { session, loading, account } = useAuth();
+  const { session, loading, account, signOut } = useAuth();
 
   if (loading) {
     return (
@@ -68,6 +68,37 @@ export default function App() {
 
   if (!session) {
     return <AuthPage />;
+  }
+
+  // Zdalny wyłącznik konta (patrz 0016_account_suspension.sql) — RLS i tak
+  // blokuje zawieszonemu kontu każdy zapis/odczyt poza własnym wierszem w
+  // `accounts`, ale bez tego ekranu użytkownik zobaczyłby tylko serię
+  // niezrozumiałych błędów RLS zamiast jasnej informacji, co się stało.
+  if (account?.status === "suspended") {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 12,
+          padding: 24,
+          textAlign: "center",
+        }}
+      >
+        <div style={{ fontSize: 40 }}>🔒</div>
+        <h1 style={{ margin: 0 }}>Konto zawieszone</h1>
+        <p style={{ margin: 0, color: "var(--color-text-muted)", maxWidth: 360 }}>
+          Dostęp do tego konta został tymczasowo zablokowany — np. z powodu wygasłej płatności.
+          Skontaktuj się z administratorem, żeby go przywrócić.
+        </p>
+        <button className="btn-ghost" onClick={signOut} style={{ marginTop: 8 }}>
+          Wyloguj
+        </button>
+      </div>
+    );
   }
 
   return (
