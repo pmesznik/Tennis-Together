@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { MOCK_PARENT_PROFILE } from "../mockData.js";
 import { useAuth } from "../lib/AuthContext.jsx";
 import { usePlayers } from "../lib/usePlayers.js";
+import { verifyPztLogin } from "../lib/usePztPlayerSearch.js";
 import ErrorBox from "../components/ErrorBox.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
 
@@ -290,6 +291,10 @@ function PlayerCard({ player: p, onEdit }) {
         </div>
       </div>
 
+      {p.pzt_verified && (
+        <span className="badge-verified">🎾 Zweryfikowany zawodnik PZT ({p.pzt_login})</span>
+      )}
+
       {p.club_name && <Field label="Klub / akademia" value={p.club_name} />}
       {p.city && <Field label="Miasto" value={p.city} />}
       {p.ranking_te != null && <Field label="Ranking Tennis Europe" value={`#${p.ranking_te}`} />}
@@ -311,8 +316,37 @@ function PlayerForm({ initial, onSubmit, onDone, onCancel, submitLabel, busyLabe
   const [category, setCategory] = useState(initial?.category ?? "U12");
   const [clubName, setClubName] = useState(initial?.club_name ?? "");
   const [city, setCity] = useState(initial?.city ?? "");
+  const [pztLogin, setPztLogin] = useState(initial?.pzt_login ?? "");
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+
+  // Weryfikacja PZT (PLAN.md, "z kim ja właściwie jadę") — potwierdzona
+  // TYLKO dla aktualnie wpisanych imienia/nazwiska/loginu. Zmiana
+  // któregokolwiek z nich unieważnia wcześniejszą weryfikację, żeby nie
+  // dało się np. zweryfikować loginem dziecka, a potem podmienić dane na
+  // czyjeś inne bez ponownego sprawdzenia.
+  const [pztCheck, setPztCheck] = useState(
+    initial?.pzt_verified ? { status: "ok", pztName: null } : { status: "idle", pztName: null }
+  );
+  const invalidatePztCheck = () => setPztCheck({ status: "idle", pztName: null });
+
+  const handleVerifyPzt = async () => {
+    const login = pztLogin.trim();
+    if (!login) return;
+    setPztCheck({ status: "checking", pztName: null });
+    try {
+      const result = await verifyPztLogin(login, firstName.trim(), lastName.trim());
+      if (!result.found) {
+        setPztCheck({ status: "not-found", pztName: null });
+      } else if (result.matches) {
+        setPztCheck({ status: "ok", pztName: result.pztName });
+      } else {
+        setPztCheck({ status: "mismatch", pztName: result.pztName });
+      }
+    } catch {
+      setPztCheck({ status: "error", pztName: null });
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -332,6 +366,9 @@ function PlayerForm({ initial, onSubmit, onDone, onCancel, submitLabel, busyLabe
       category,
       club_name: clubName.trim() || null,
       city: city.trim() || null,
+      pzt_login: pztLogin.trim() || null,
+      pzt_verified: pztCheck.status === "ok" && !!pztLogin.trim(),
+      pzt_verified_at: pztCheck.status === "ok" && pztLogin.trim() ? new Date().toISOString() : null,
     });
     setBusy(false);
 
@@ -349,11 +386,27 @@ function PlayerForm({ initial, onSubmit, onDone, onCancel, submitLabel, busyLabe
       <div style={{ display: "flex", gap: 8 }}>
         <div style={{ flex: 1 }}>
           <label style={labelStyle}>Imię</label>
-          <input style={inputStyle} required value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          <input
+            style={inputStyle}
+            required
+            value={firstName}
+            onChange={(e) => {
+              setFirstName(e.target.value);
+              invalidatePztCheck();
+            }}
+          />
         </div>
         <div style={{ flex: 1 }}>
           <label style={labelStyle}>Nazwisko</label>
-          <input style={inputStyle} required value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          <input
+            style={inputStyle}
+            required
+            value={lastName}
+            onChange={(e) => {
+              setLastName(e.target.value);
+              invalidatePztCheck();
+            }}
+          />
         </div>
       </div>
 
@@ -394,6 +447,49 @@ function PlayerForm({ initial, onSubmit, onDone, onCancel, submitLabel, busyLabe
       <div>
         <label style={labelStyle}>Miasto (opcjonalnie)</label>
         <input style={inputStyle} value={city} onChange={(e) => setCity(e.target.value)} />
+      </div>
+
+      <div>
+        <label style={labelStyle}>Login PZT (opcjonalnie — potwierdza, że to prawdziwy zawodnik)</label>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            style={{ ...inputStyle, flex: 1 }}
+            value={pztLogin}
+            onChange={(e) => {
+              setPztLogin(e.target.value);
+              invalidatePztCheck();
+            }}
+            placeholder="np. BAZ2368226"
+          />
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={handleVerifyPzt}
+            disabled={!pztLogin.trim() || pztCheck.status === "checking"}
+          >
+            {pztCheck.status === "checking" ? "Sprawdzam…" : "Zweryfikuj"}
+          </button>
+        </div>
+        {pztCheck.status === "ok" && (
+          <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--color-verified)" }}>
+            ✅ Zgadza się z PZT{pztCheck.pztName ? ` (${pztCheck.pztName})` : ""}.
+          </p>
+        )}
+        {pztCheck.status === "mismatch" && (
+          <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--color-secondary)" }}>
+            ⚠️ Portal PZT ma pod tym loginem inne imię i nazwisko: „{pztCheck.pztName}". Sprawdź login.
+          </p>
+        )}
+        {pztCheck.status === "not-found" && (
+          <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--color-secondary)" }}>
+            ⚠️ Nie znaleziono takiego loginu w bazie PZT.
+          </p>
+        )}
+        {pztCheck.status === "error" && (
+          <p style={{ margin: "6px 0 0", fontSize: 13, color: "var(--color-text-muted)" }}>
+            Nie udało się połączyć z bazą PZT — spróbuj ponownie za chwilę.
+          </p>
+        )}
       </div>
 
       {error && <ErrorBox>{error}</ErrorBox>}

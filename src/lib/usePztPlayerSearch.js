@@ -62,3 +62,49 @@ export function usePztPlayerSearch() {
 
   return { query, setQuery, results, searching, searchError, getUpcomingTournaments };
 }
+
+// Usuwa polskie znaki + normalizuje wielkość liter/spacje — ten sam wzorzec
+// co w useCityCoordinates.js (dopasowanie odporne na literówki/ogonki).
+function normalizeName(name) {
+  return (name ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/ą/g, "a")
+    .replace(/ć/g, "c")
+    .replace(/ę/g, "e")
+    .replace(/ł/g, "l")
+    .replace(/ń/g, "n")
+    .replace(/ó/g, "o")
+    .replace(/ś/g, "s")
+    .replace(/ź/g, "z")
+    .replace(/ż/g, "z");
+}
+
+// "Zgadza się" = każde słowo z imienia/nazwiska podanego w profilu
+// występuje też w nazwie zwróconej live przez PZT (portal zwraca format
+// "Nazwisko Imię", więc porównujemy zbiór słów, nie kolejność).
+function namesMatch(firstName, lastName, pztName) {
+  const formWords = new Set(
+    normalizeName(`${firstName} ${lastName}`)
+      .split(/\s+/)
+      .filter(Boolean)
+  );
+  const pztWords = normalizeName(pztName).split(/\s+/).filter(Boolean);
+  return pztWords.length > 0 && pztWords.every((w) => formWords.has(w));
+}
+
+// Weryfikacja zawodnika przez login PZT (PLAN.md, "z kim ja właściwie
+// jadę") — pyta ten sam endpoint co wyszukiwarka turniejów
+// (/players/{login}/upcoming, live scrape z portal.pzt.pl, patrz projekt
+// NOWA APLIKACJA PZT ANDROID) tylko po to, żeby dostać prawdziwe imię i
+// nazwisko przypisane do tego loginu, i porównać je z tym, co rodzic
+// wpisał w profilu zawodnika.
+export async function verifyPztLogin(login, firstName, lastName) {
+  const res = await fetch(`${PZT_API_BASE}/players/${encodeURIComponent(login)}/upcoming`);
+  if (!res.ok) throw new Error(`Serwer PZT odpowiedział błędem ${res.status}`);
+  const data = await res.json();
+  if (!data.player_name) {
+    return { found: false, pztName: null, matches: false };
+  }
+  return { found: true, pztName: data.player_name, matches: namesMatch(firstName, lastName, data.player_name) };
+}
