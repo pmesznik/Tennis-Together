@@ -6,6 +6,7 @@ import { useLodgingOffers } from "../lib/useLodging.js";
 import { useJoinRequests } from "../lib/useJoinRequests.js";
 import ErrorBox from "../components/ErrorBox.jsx";
 import MeetingConfirmation from "../components/MeetingConfirmation.jsx";
+import CounterpartCard from "../components/CounterpartCard.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
 
 const KIND_LABELS = {
@@ -121,7 +122,12 @@ function IncomingRequests({ joinRequests }) {
                 </span>
               )}
             </div>
-            {r.status === "accepted" && <MeetingConfirmation request={r} joinRequests={joinRequests} />}
+            {r.status === "accepted" && (
+              <>
+                <CounterpartCard accountId={r.requester_trip?.created_by_account_id} />
+                <MeetingConfirmation request={r} joinRequests={joinRequests} />
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -194,6 +200,7 @@ function OfferCard({ offer: l, account, trips, joinRequests }) {
           )}
           {myOutgoing.status === "accepted" && (
             <>
+              <CounterpartCard accountId={myOutgoing.lodging_offers?.trips?.created_by_account_id} />
               <button className="btn-ghost" onClick={handleCancelAccepted} disabled={busy}>
                 {busy ? "Rezygnuję…" : "Zrezygnuj z noclegu"}
               </button>

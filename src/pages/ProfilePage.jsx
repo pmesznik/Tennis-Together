@@ -3,6 +3,7 @@ import { MOCK_PARENT_PROFILE } from "../mockData.js";
 import { useAuth } from "../lib/AuthContext.jsx";
 import { usePlayers } from "../lib/usePlayers.js";
 import { verifyPztLogin } from "../lib/usePztPlayerSearch.js";
+import { supabase } from "../lib/supabase.js";
 import ErrorBox from "../components/ErrorBox.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
 
@@ -42,11 +43,39 @@ export default function ProfilePage() {
 function ParentProfile() {
   const { account, user, signOut, updateAccount } = useAuth();
   const [editing, setEditing] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+  const [avatarError, setAvatarError] = useState(null);
   // Zgody i historia wyjazdów nie są jeszcze podłączone pod `consents`/`trips`
   // (patrz PLAN.md, "Następne kroki") — na razie dane przykładowe, reszta
   // karty (imię, rola, e-mail, telefon, wylogowanie, edycja) jest już prawdziwa.
   const mock = MOCK_PARENT_PROFILE;
   const displayName = account?.full_name || user?.email || "…";
+
+  // Zdjęcie profilowe — opcjonalne, wyłącznie "żeby się rozpoznać" przy
+  // spotkaniu (nie weryfikacja tożsamości, patrz 0019_avatars.sql). Stała
+  // nazwa pliku per konto (upsert) + znacznik czasu w URL-u, żeby
+  // przeglądarka po podmianie zdjęcia nie pokazywała starej wersji z cache.
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file || !account) return;
+    setAvatarError(null);
+    setAvatarBusy(true);
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `${account.id}/avatar.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true, contentType: file.type });
+    if (uploadError) {
+      setAvatarBusy(false);
+      setAvatarError("Nie udało się wgrać zdjęcia. Spróbuj ponownie.");
+      return;
+    }
+    const { data: pub } = supabase.storage.from("avatars").getPublicUrl(path);
+    const { error } = await updateAccount({ avatar_url: `${pub.publicUrl}?t=${Date.now()}` });
+    setAvatarBusy(false);
+    if (error) setAvatarError("Zdjęcie wgrane, ale nie udało się zapisać w profilu.");
+  };
 
   if (editing) {
     return (
@@ -62,8 +91,48 @@ function ParentProfile() {
   return (
     <div className="glass-card" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-        <div className="avatar-circle" style={{ width: 48, height: 48, fontSize: 16 }}>
-          {displayName[0]?.toUpperCase()}
+        <div style={{ position: "relative", width: 48, height: 48, flexShrink: 0 }}>
+          {account?.avatar_url ? (
+            <img
+              src={account.avatar_url}
+              alt=""
+              width={48}
+              height={48}
+              style={{ borderRadius: "50%", objectFit: "cover", display: "block" }}
+            />
+          ) : (
+            <div className="avatar-circle" style={{ width: 48, height: 48, fontSize: 16 }}>
+              {displayName[0]?.toUpperCase()}
+            </div>
+          )}
+          <label
+            title="Zmień zdjęcie"
+            style={{
+              position: "absolute",
+              bottom: -2,
+              right: -2,
+              width: 22,
+              height: 22,
+              borderRadius: "50%",
+              background: "var(--color-bg-elevated)",
+              border: "1px solid var(--color-card-border)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 11,
+              cursor: avatarBusy ? "default" : "pointer",
+            }}
+          >
+            📷
+            <input
+              type="file"
+              accept="image/*"
+              capture="user"
+              onChange={handleAvatarChange}
+              disabled={avatarBusy}
+              style={{ display: "none" }}
+            />
+          </label>
         </div>
         <div>
           <p style={{ margin: 0, fontWeight: 700 }}>{displayName}</p>
@@ -73,6 +142,11 @@ function ParentProfile() {
           {account?.verified && <span className="badge-verified">🛡️ Parent Verified</span>}
         </div>
       </div>
+      {avatarBusy && <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)" }}>Wgrywam zdjęcie…</p>}
+      {avatarError && <ErrorBox>{avatarError}</ErrorBox>}
+      <p style={{ margin: 0, fontSize: 12, color: "var(--color-text-muted)" }}>
+        Zdjęcie jest opcjonalne — pomaga innym Cię rozpoznać przy spotkaniu, to nie jest weryfikacja tożsamości.
+      </p>
 
       <div>
         <p style={{ margin: "0 0 6px", fontSize: 13, color: "var(--color-text-muted)" }}>E-mail</p>

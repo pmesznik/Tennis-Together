@@ -7,6 +7,7 @@ import { useJoinRequests } from "../lib/useJoinRequests.js";
 import { useCityCoordinates, findCityCoords, haversineKm } from "../lib/useCityCoordinates.js";
 import ErrorBox from "../components/ErrorBox.jsx";
 import MeetingConfirmation from "../components/MeetingConfirmation.jsx";
+import CounterpartCard from "../components/CounterpartCard.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
 
 const dateFormatter = new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long" });
@@ -184,7 +185,12 @@ function IncomingRequests({ joinRequests }) {
                 </span>
               )}
             </div>
-            {r.status === "accepted" && <MeetingConfirmation request={r} joinRequests={joinRequests} />}
+            {r.status === "accepted" && (
+              <>
+                <CounterpartCard accountId={r.requester_trip?.created_by_account_id} />
+                <MeetingConfirmation request={r} joinRequests={joinRequests} />
+              </>
+            )}
           </div>
         ))}
       </div>
@@ -262,6 +268,7 @@ function OfferCard({ offer: r, account, trips, joinRequests }) {
           )}
           {myOutgoing.status === "accepted" && (
             <>
+              <CounterpartCard accountId={myOutgoing.ride_offers?.trips?.created_by_account_id} />
               <button className="btn-ghost" onClick={handleCancelAccepted} disabled={busy}>
                 {busy ? "Rezygnuję…" : "Zrezygnuj z przejazdu"}
               </button>
