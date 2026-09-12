@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dokumentacja Tennis Together</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
+
+  :root {
+    --bg: #0d131e;
+    --bg-elevated: #121a28;
+    --card: rgba(22, 32, 50, 0.72);
+    --card-border: rgba(255, 255, 255, 0.09);
+    --text: #f4f6fb;
+    --text-muted: #9aa5b8;
+    --primary: #d4ff00;
+    --primary-text: #0d131e;
+    --secondary: #ff5e3a;
+    --verified: #10b981;
+    --font-heading: "Plus Jakarta Sans", system-ui, sans-serif;
+    --font-body: "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); line-height: 1.6; }
+  h1, h2, h3 { font-family: var(--font-heading); text-wrap: balance; margin: 0; }
+  a { color: var(--primary); }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.9em;
+    background: var(--bg-elevated);
+    border: 1px solid var(--card-border);
+    padding: 1px 6px;
+    border-radius: 6px;
+  }
+  pre {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px;
+    overflow-x: auto;
+    line-height: 1.5;
+  }
+  pre code { background: none; border: none; padding: 0; }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 20px 80px; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    padding: 14px 20px;
+    background: rgba(13, 19, 30, 0.88);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--card-border);
+  }
+  .topbar strong { font-family: var(--font-heading); font-size: 15px; white-space: nowrap; }
+  .topbar nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  .topbar nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600; padding: 6px 10px; border-radius: 999px; }
+  .topbar nav a:hover { color: var(--text); background: var(--bg-elevated); }
+
+  .hero { padding: 40px 0 8px; display: flex; flex-direction: column; gap: 10px; }
+  .eyebrow {
+    display: inline-flex; align-self: flex-start; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+    padding: 5px 12px; border-radius: 999px;
+  }
+  .hero h1 { font-size: clamp(26px, 5vw, 34px); font-weight: 800; }
+  .hero p.lead { color: var(--text-muted); font-size: 15px; max-width: 62ch; }
+
+  section { padding: 36px 0; border-top: 1px solid var(--card-border); }
+  section:first-of-type { border-top: none; }
+  .section-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 16px; }
+  h2 { font-size: 19px; font-weight: 700; }
+  h3 { font-size: 15px; font-weight: 700; margin: 20px 0 8px; }
+  p { margin: 0 0 12px; font-size: 14.5px; }
+  p.muted { color: var(--text-muted); }
+
+  .download-card {
+    display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;
+    padding: 20px; border-radius: 16px; background: var(--card); border: 1px solid var(--card-border);
+  }
+  .download-card .file { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 8px; border: none; border-radius: 999px;
+    padding: 12px 22px; font-family: var(--font-heading); font-weight: 700; font-size: 14px;
+    background: var(--primary); color: var(--primary-text); text-decoration: none; white-space: nowrap;
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--card-border); vertical-align: top; }
+  th { color: var(--text-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .table-wrap { overflow-x: auto; }
+
+  .diagram {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    white-space: pre;
+    background: var(--bg-elevated);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 18px;
+    overflow-x: auto;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--verified);
+    background: color-mix(in srgb, var(--verified) 14%, transparent); border-radius: 999px; padding: 3px 10px; margin-bottom: 8px; }
+
+  .trust-grid { display: flex; flex-direction: column; gap: 10px; }
+  .trust-item { display: flex; gap: 12px; padding: 14px 16px; border-radius: 14px; background: var(--card); border: 1px solid var(--card-border); }
+  .trust-item .n {
+    flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--bg-elevated); border: 1px solid var(--card-border);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-mono); font-size: 12px; color: var(--primary);
+  }
+  .trust-item strong { display: block; margin-bottom: 3px; font-family: var(--font-heading); font-size: 14px; }
+  .trust-item p { margin: 0; font-size: 13.5px; color: var(--text-muted); }
+
+  .scope-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .scope-list li { padding-left: 22px; position: relative; font-size: 14px; color: var(--text-muted); }
+  .scope-list li::before { content: "—"; position: absolute; left: 0; color: var(--secondary); }
+
+  footer { padding: 30px 0 0; color: var(--text-muted); font-size: 12.5px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <strong>🎾 Tennis Together — dokumentacja</strong>
+  <nav>
+    <a href="testerzy.html">Strona testerów</a>
+    <a href="#architektura">Architektura</a>
+    <a href="#dane">Model danych</a>
+    <a href="#zaufanie">Zaufanie</a>
+    <a href="#budowanie">Budowanie</a>
+  </nav>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <span class="eyebrow">Dokumentacja techniczna · wersja robocza</span>
+    <h1>Tennis Together</h1>
+    <p class="lead">
+      Aplikacja do organizowania wspólnych wyjazdów rodziców i zawodników na turnieje tenisowe —
+      dopasowania na przejazdy, noclegi i grupy wyjazdowe. Testowana obecnie wewnętrznie
+      w Akademii Tenisowej Zabrze, na danych fikcyjnych.
+    </p>
+  </div>
+
+  <section>
+    <div class="download-card">
+      <div>
+        <div style="font-size:12px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.06em;">Android · build testowy (debug)</div>
+        <div class="file">tennis-together-debug-latest.apk</div>
+      </div>
+      <a class="btn-primary" href="https://github.com/pmesznik/Tennis-Together/releases/download/debug-latest/tennis-together-debug-latest.apk">⬇️ Pobierz najnowszy APK</a>
+    </div>
+    <p class="muted" style="margin-top:12px; font-size:13px;">
+      Instrukcja instalacji i formularz zgłaszania błędów: <a href="testerzy.html">strona testerów</a>.
+    </p>
+  </section>
+
+  <section id="opis">
+    <div class="section-head"><h2>Opis</h2></div>
+    <p>
+      Tennis Together rozwiązuje jeden konkretny problem: koszt i organizację wyjazdów na turnieje —
+      wspólne przejazdy, wspólne noclegi, grupy wyjazdowe na dany turniej. Rodzic zgłasza wyjazd
+      zawodnika na turniej, a aplikacja pomaga znaleźć innych jadących w tę samą stronę, w tym
+      samym terminie.
+    </p>
+    <p class="pill">✓ Multi-tenant od pierwszego dnia</p>
+    <p>
+      Jedna wspólna baza danych obsługuje dowolną liczbę rodzin/klubów — dodanie kolejnych
+      testerów albo klubów nie wymaga żadnej zmiany w architekturze, tylko więcej kont.
+    </p>
+  </section>
+
+  <section id="architektura">
+    <div class="section-head"><h2>Architektura</h2></div>
+    <p>
+      Aplikacja to React SPA opakowane w <strong>Capacitor</strong> (Android + przeglądarka/PWA).
+      Nie ma własnego backendu — logowanie, baza danych, reguły dostępu i pliki obsługuje
+      w całości <strong>Supabase</strong>. Jedyne dwa zewnętrzne punkty kontaktu to publiczne API
+      projektu-siostry (rankingi PZT) i codzienny import kalendarza turniejów.
+    </p>
+    <div class="diagram">Aplikacja React (Vite + Capacitor)
+      │
+      ├──▶ Supabase (Postgres + Auth + Storage), region Frankfurt
+      │        • RLS na każdej tabeli — właściciel widzi/zmienia
+      │          tylko swoje dane
+      │        • funkcje SECURITY DEFINER dla uzasadnionych wyjątków
+      │          (panel trenera, dopasowany współpasażer, zawieszenie
+      │          konta) — nigdy nie otwierają całej tabeli
+      │        • Storage: zdjęcia profilowe (bucket "avatars")
+      │
+      ├──▶ Backend PZT (FastAPI, projekt "NOWA APLIKACJA PZT
+      │        ANDROID", Railway) — wyszukiwarka turniejów po
+      │        zawodniku, weryfikacja loginu PZT (live scrape
+      │        portal.pzt.pl)
+      │
+      └──▶ GitHub Actions (cron, codziennie)
+               • import kalendarza OTK (scraper PZT) i Tennis
+                 Europe wprost do tabeli `tournaments`</div>
+  </section>
+
+  <section id="stos">
+    <div class="section-head"><h2>Stos technologiczny</h2></div>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Warstwa</th><th>Technologia</th></tr>
+        <tr><td>Interfejs</td><td>React 18 + Vite 5 + React Router 6</td></tr>
+        <tr><td>Natywna powłoka</td><td>Capacitor 8 (Android; PWA jako cel równoległy)</td></tr>
+        <tr><td>Backend</td><td>Supabase — Postgres, Auth (e-mail/hasło), Storage, Row Level Security</td></tr>
+        <tr><td>Integracja zewnętrzna</td><td>FastAPI na Railway (projekt-siostra) — wyszukiwarka i weryfikacja zawodników PZT</td></tr>
+        <tr><td>Import danych turniejowych</td><td>Python + BeautifulSoup, cron w GitHub Actions</td></tr>
+        <tr><td>Kody QR</td><td><code>qrcode</code> (generowanie po stronie klienta, bez serwera)</td></tr>
+        <tr><td>CI/CD</td><td>GitHub Actions — debug APK po każdym pushu (stały link), release podpisany ręcznie na żądanie</td></tr>
+        <tr><td>Hosting dokumentacji</td><td>GitHub Pages (ten sam publiczny branch <code>main</code>, folder <code>/docs</code>)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section id="dane">
+    <div class="section-head"><h2>Model danych i bezpieczeństwo</h2></div>
+    <p>
+      Każda tabela ma włączone Row Level Security — domyślna reguła to „widzisz i zmieniasz tylko
+      to, czego jesteś właścicielem”. Wyjątki (np. trener widzący zawodników swojego klubu,
+      dopasowany współpasażer widzący czyjeś imię i zdjęcie) są zawsze realizowane przez
+      dedykowaną funkcję <code>SECURITY DEFINER</code>, która zwraca dokładnie te pola, które mają
+      być widoczne — nigdy nie otwiera całej tabeli.
+    </p>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Grupa</th><th>Tabele</th></tr>
+        <tr><td>Ludzie</td><td><code>accounts</code>, <code>players</code>, <code>consents</code></td></tr>
+        <tr><td>Turnieje i wyjazdy</td><td><code>tournaments</code>, <code>trips</code></td></tr>
+        <tr><td>Przejazdy i noclegi</td><td><code>ride_offers</code>, <code>ride_requests</code>, <code>ride_join_requests</code>, <code>lodging_offers</code>, <code>lodging_join_requests</code></td></tr>
+        <tr><td>Grupy i czat</td><td><code>trip_groups</code>, <code>trip_group_members</code>, <code>conversations</code>, <code>conversation_participants</code>, <code>messages</code></td></tr>
+        <tr><td>Moderacja</td><td><code>reports</code>, <code>blocks</code></td></tr>
+        <tr><td>Referencyjne</td><td><code>tournaments</code> (import automatyczny), <code>city_coordinates</code> (439 miast, dopasowania po odległości), <code>bug_reports</code> (formularz testerów)</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section id="zaufanie">
+    <div class="section-head"><h2>Zaufanie między nieznajomymi sobie rodzinami</h2></div>
+    <p>
+      Aplikacja kojarzy rodziny, które się wcześniej nie znały, do wspólnego przejazdu czy
+      noclegu — z udziałem dzieci. Trzy niezależne, celowo lekkie warstwy budują zaufanie bez
+      pełnej weryfikacji tożsamości (dokument tożsamości i formalna weryfikacja są odłożone do
+      etapu z udziałem prawnika):
+    </p>
+    <div class="trust-grid">
+      <div class="trust-item">
+        <div class="n">1</div>
+        <div>
+          <strong>Weryfikacja zawodnika przez login PZT</strong>
+          <p>Imię i nazwisko z profilu porównywane live z bazą Polskiego Związku Tenisowego — zewnętrzna, trudna do sfałszowania kotwica tożsamości zawodnika.</p>
+        </div>
+      </div>
+      <div class="trust-item">
+        <div class="n">2</div>
+        <div>
+          <strong>Potwierdzenie spotkania kodem/QR</strong>
+          <p>Po zaakceptowaniu przejazdu/noclegu jedna strona pokazuje 6-znakowy kod (i QR), druga wpisuje go na miejscu spotkania — potwierdza, że to naprawdę ta osoba z ustalenia.</p>
+        </div>
+      </div>
+      <div class="trust-item">
+        <div class="n">3</div>
+        <div>
+          <strong>Opcjonalne zdjęcie profilowe</strong>
+          <p>Widoczne wyłącznie dla dopasowanej drugiej strony po akceptacji — pomaga rozpoznać się na miejscu, nie jest weryfikacją tożsamości.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="budowanie">
+    <div class="section-head"><h2>Budowanie i wydawanie</h2></div>
+    <p>Dwa workflow GitHub Actions do budowy Androida:</p>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Workflow</th><th>Wyzwalacz</th><th>Wynik</th></tr>
+        <tr><td><code>android-debug-apk.yml</code></td><td>każdy push na <code>main</code></td><td>niepodpisany debug APK, numerowany release + stały link <code>debug-latest</code></td></tr>
+        <tr><td><code>android-build.yml</code></td><td>ręcznie (workflow_dispatch)</td><td>podpisany release APK (wymaga sekretów klucza — jeszcze nie skonfigurowane)</td></tr>
+      </table>
+    </div>
+    <h3>Środowisko developerskie lokalnie</h3>
+    <pre><code>npm install
+npm run dev            # serwer developerski Vite (port 3100)
+npm run build           # build produkcyjny → dist/
+npx cap sync android    # synchronizacja z projektem Android</code></pre>
+    <h3>Schemat bazy danych</h3>
+    <p>
+      Wszystkie zmiany schematu żyją jako kolejno numerowane pliki SQL w
+      <code>supabase/migrations/</code> — uruchamiane ręcznie w Supabase SQL Editor (projekt nie
+      ma jeszcze zautomatyzowanego wdrażania migracji). Każdy plik tłumaczy w komentarzu, co i
+      dlaczego zmienia.
+    </p>
+  </section>
+
+  <section id="zakres">
+    <div class="section-head"><h2>Czego celowo nie ma (jeszcze)</h2></div>
+    <ul class="scope-list">
+      <li><strong>Regulamin i polityka prywatności</strong> — w przygotowaniu z prawnikiem; dopóki ich nie ma, aplikacja testowana tylko wewnętrznie, na danych fikcyjnych.</li>
+      <li><strong>Prawdziwe płatności</strong> — mechanizm zawieszania konta (<code>accounts.status</code> + RLS) jest gotowy, ale podłączenie realnego operatora płatności to osobny, przyszły krok.</li>
+      <li><strong>Panel administratora</strong> — moderacja dziś tylko przez bezpośrednie zapytania SQL w Supabase.</li>
+      <li><strong>Wbudowany skaner QR</strong> — potwierdzenie spotkania działa przez ręczne wpisanie kodu (zeskanowanego zwykłym aparatem telefonu), nie przez kamerę wbudowaną w aplikację.</li>
+      <li><strong>Weryfikacja numeru telefonu (SMS)</strong> — wymagałaby płatnego dostawcy SMS; niepodjęta, dopóki nie będzie wyraźnej potrzeby.</li>
+      <li><strong>Nocleg u rodziny innego zawodnika</strong> — odłożony do etapu z pełną weryfikacją tożsamości i konsultacją prawną.</li>
+    </ul>
+  </section>
+
+  <footer>Tennis Together — prototyp testowany wewnętrznie w Akademii Tenisowej Zabrze.</footer>
+</div>
+</body>
+</html>
