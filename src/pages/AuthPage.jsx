@@ -120,7 +120,19 @@ function RegisterForm({ onDone }) {
     // wczytaniu aplikacji. Patrz AuthContext.jsx.
     registerPendingProfile({ role, full_name: fullName });
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        // Bez tego link w mailu potwierdzającym wraca na cokolwiek jest
+        // ustawione jako "Site URL" w panelu Supabase — u nas domyślny
+        // placeholder (localhost), więc kliknięcie na telefonie/innym
+        // komputerze kończyło się błędem. Strona niżej istnieje niezależnie
+        // od tego, czy apka jest akurat zainstalowana czy nie (GitHub
+        // Pages, ten sam mechanizm co docs/testerzy.html).
+        emailRedirectTo: "https://pmesznik.github.io/Tennis-Together/potwierdz-email.html",
+      },
+    });
     setBusy(false);
 
     if (error) {

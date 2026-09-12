@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>E-mail potwierdzony — Tennis Together</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@400;500&display=swap');
+  :root {
+    --bg: #0d131e;
+    --card: rgba(22, 32, 50, 0.72);
+    --card-border: rgba(255, 255, 255, 0.09);
+    --text: #f4f6fb;
+    --text-muted: #9aa5b8;
+    --primary: #d4ff00;
+    --primary-text: #0d131e;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Inter", system-ui, sans-serif;
+    padding: 24px;
+  }
+  .card {
+    max-width: 380px;
+    width: 100%;
+    text-align: center;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 36px 28px;
+  }
+  .icon { font-size: 48px; margin-bottom: 8px; }
+  h1 {
+    font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+    font-size: 22px;
+    margin: 0 0 10px;
+  }
+  p { margin: 0 0 8px; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+  .hint {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--card-border);
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">🎾✅</div>
+    <h1>E-mail potwierdzony!</h1>
+    <p>Twoje konto w Tennis Together jest aktywne. Możesz wrócić do aplikacji i się zalogować.</p>
+    <div class="hint">
+      <p style="margin:0;">Ten ekran możesz teraz zamknąć — logowanie odbywa się w samej aplikacji na telefonie, nie tutaj.</p>
+    </div>
+  </div>
+</body>
+</html>
