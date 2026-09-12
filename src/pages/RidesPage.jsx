@@ -6,6 +6,7 @@ import { useRideOffers, useRideRequests } from "../lib/useRides.js";
 import { useJoinRequests } from "../lib/useJoinRequests.js";
 import { useCityCoordinates, findCityCoords, haversineKm } from "../lib/useCityCoordinates.js";
 import ErrorBox from "../components/ErrorBox.jsx";
+import MeetingConfirmation from "../components/MeetingConfirmation.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
 
 const dateFormatter = new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long" });
@@ -152,39 +153,38 @@ function IncomingRequests({ joinRequests }) {
       </p>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {incoming.map((r) => (
-          <div
-            key={r.id}
-            className="list-item"
-            style={{ justifyContent: "space-between", flexWrap: "wrap" }}
-          >
-            <div>
-              <strong style={{ fontSize: 14 }}>{r.requester_trip?.players?.first_name ?? "Zawodnik"}</strong>
-              <span style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
-                {" "}
-                · {r.requester_trip?.departure_city ?? "?"}
-              </span>
+          <div key={r.id} className="list-item" style={{ flexDirection: "column", alignItems: "stretch", gap: 10 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+              <div>
+                <strong style={{ fontSize: 14 }}>{r.requester_trip?.players?.first_name ?? "Zawodnik"}</strong>
+                <span style={{ fontSize: 13, color: "var(--color-text-muted)" }}>
+                  {" "}
+                  · {r.requester_trip?.departure_city ?? "?"}
+                </span>
+              </div>
+              {r.status === "pending" ? (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button className="btn-primary" disabled={busyId === r.id} onClick={() => handle(r.id, "accepted")}>
+                    Akceptuj
+                  </button>
+                  <button className="btn-ghost" disabled={busyId === r.id} onClick={() => handle(r.id, "declined")}>
+                    Odrzuć
+                  </button>
+                </div>
+              ) : r.status === "accepted" ? (
+                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                  <span className="status-pill ok">Zaakceptowano ✅</span>
+                  <button className="btn-ghost" disabled={busyId === r.id} onClick={() => handle(r.id, "cancelled")}>
+                    Zrezygnuj
+                  </button>
+                </div>
+              ) : (
+                <span className={`status-pill ${STATUS_LABELS[r.status]?.cls ?? "muted"}`}>
+                  {STATUS_LABELS[r.status]?.text ?? r.status}
+                </span>
+              )}
             </div>
-            {r.status === "pending" ? (
-              <div style={{ display: "flex", gap: 8 }}>
-                <button className="btn-primary" disabled={busyId === r.id} onClick={() => handle(r.id, "accepted")}>
-                  Akceptuj
-                </button>
-                <button className="btn-ghost" disabled={busyId === r.id} onClick={() => handle(r.id, "declined")}>
-                  Odrzuć
-                </button>
-              </div>
-            ) : r.status === "accepted" ? (
-              <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                <span className="status-pill ok">Zaakceptowano ✅</span>
-                <button className="btn-ghost" disabled={busyId === r.id} onClick={() => handle(r.id, "cancelled")}>
-                  Zrezygnuj
-                </button>
-              </div>
-            ) : (
-              <span className={`status-pill ${STATUS_LABELS[r.status]?.cls ?? "muted"}`}>
-                {STATUS_LABELS[r.status]?.text ?? r.status}
-              </span>
-            )}
+            {r.status === "accepted" && <MeetingConfirmation request={r} joinRequests={joinRequests} />}
           </div>
         ))}
       </div>
@@ -261,9 +261,12 @@ function OfferCard({ offer: r, account, trips, joinRequests }) {
             </button>
           )}
           {myOutgoing.status === "accepted" && (
-            <button className="btn-ghost" onClick={handleCancelAccepted} disabled={busy}>
-              {busy ? "Rezygnuję…" : "Zrezygnuj z przejazdu"}
-            </button>
+            <>
+              <button className="btn-ghost" onClick={handleCancelAccepted} disabled={busy}>
+                {busy ? "Rezygnuję…" : "Zrezygnuj z przejazdu"}
+              </button>
+              <MeetingConfirmation request={myOutgoing} joinRequests={joinRequests} />
+            </>
           )}
         </div>
       ) : showPicker ? (

@@ -138,5 +138,54 @@ export function useJoinRequests(kind, accountId) {
     return {};
   };
 
-  return { incoming, outgoing, loading, error, requestToJoin, respond, withdraw, refresh };
+  // Potwierdzenie spotkania kodem/QR (PLAN.md, "z kim ja właściwie jadę")
+  // — jedna strona generuje kod, druga go wpisuje (albo zeskanuje QR
+  // zwykłym aparatem i przepisze). Porównanie robi baza (drugi .eq()
+  // niżej), nie lokalny stan — inaczej strona wpisująca kod działałaby na
+  // nieaktualnej kopii wiersza, sprzed wygenerowania kodu przez drugą
+  // stronę (ten hook nie ma subskrypcji live, tylko refresh na żądanie).
+  const MEETING_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // bez 0/O, 1/I — łatwiej przepisać
+
+  const generateMeetingCode = async (requestId) => {
+    const code = Array.from(
+      { length: 6 },
+      () => MEETING_CODE_ALPHABET[Math.floor(Math.random() * MEETING_CODE_ALPHABET.length)]
+    ).join("");
+    const { data, error } = await supabase
+      .from(cfg.table)
+      .update({ meeting_code: code })
+      .eq("id", requestId)
+      .select(`*, requester_trip:trips(departure_city, created_by_account_id, players(first_name)), ${cfg.offerEmbed}`)
+      .single();
+    if (error) return { error };
+    setRows((prev) => prev.map((r) => (r.id === requestId ? data : r)));
+    return { data };
+  };
+
+  const verifyMeetingCode = async (requestId, enteredCode) => {
+    const { data, error } = await supabase
+      .from(cfg.table)
+      .update({ meeting_confirmed_at: new Date().toISOString(), meeting_confirmed_by: accountId })
+      .eq("id", requestId)
+      .eq("meeting_code", enteredCode.trim().toUpperCase())
+      .select(`*, requester_trip:trips(departure_city, created_by_account_id, players(first_name)), ${cfg.offerEmbed}`)
+      .maybeSingle();
+    if (error) return { error };
+    if (!data) return { mismatch: true };
+    setRows((prev) => prev.map((r) => (r.id === requestId ? data : r)));
+    return { data };
+  };
+
+  return {
+    incoming,
+    outgoing,
+    loading,
+    error,
+    requestToJoin,
+    respond,
+    withdraw,
+    generateMeetingCode,
+    verifyMeetingCode,
+    refresh,
+  };
 }
