@@ -1,0 +1,531 @@
+<title>Testerzy Tennis Together</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
+
+  :root {
+    --bg: #0d131e;
+    --bg-elevated: #121a28;
+    --card: rgba(22, 32, 50, 0.72);
+    --card-border: rgba(255, 255, 255, 0.09);
+    --text: #f4f6fb;
+    --text-muted: #9aa5b8;
+    --primary: #d4ff00;
+    --primary-text: #0d131e;
+    --secondary: #ff5e3a;
+    --secondary-text: #0d131e;
+    --verified: #10b981;
+    --font-heading: "Plus Jakarta Sans", system-ui, sans-serif;
+    --font-body: "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.55;
+  }
+
+  h1, h2, h3 { font-family: var(--font-heading); text-wrap: balance; margin: 0; }
+
+  a { color: var(--primary); }
+
+  .wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
+
+  /* ── Pasek góra ─────────────────────────────────────────────── */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 20px;
+    background: rgba(13, 19, 30, 0.88);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--card-border);
+    flex-wrap: wrap;
+  }
+
+  .topbar strong {
+    font-family: var(--font-heading);
+    font-size: 15px;
+    white-space: nowrap;
+  }
+
+  .topbar nav {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+  }
+
+  .topbar nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 6px 10px;
+    border-radius: 999px;
+  }
+
+  .topbar nav a:hover { color: var(--text); background: var(--bg-elevated); }
+
+  /* ── Hero ───────────────────────────────────────────────────── */
+  .hero {
+    padding: 44px 0 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 14%, transparent);
+    border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent);
+    padding: 5px 12px;
+    border-radius: 999px;
+  }
+
+  .hero h1 { font-size: clamp(28px, 5vw, 38px); font-weight: 800; }
+
+  .hero p.lead { color: var(--text-muted); font-size: 16px; max-width: 60ch; }
+
+  /* ── Sekcje ─────────────────────────────────────────────────── */
+  section { padding: 40px 0; border-top: 1px solid var(--card-border); }
+  section:first-of-type { border-top: none; }
+
+  .section-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 18px; }
+  .section-head .num {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--primary);
+    background: var(--bg-elevated);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 2px 7px;
+  }
+  .section-head h2 { font-size: 21px; font-weight: 700; }
+
+  .callout {
+    display: flex;
+    gap: 12px;
+    padding: 16px 18px;
+    border-radius: 14px;
+    background: color-mix(in srgb, var(--secondary) 12%, var(--bg-elevated));
+    border: 1px solid color-mix(in srgb, var(--secondary) 40%, transparent);
+  }
+  .callout .icon { font-size: 22px; line-height: 1; }
+  .callout strong { display: block; margin-bottom: 4px; font-family: var(--font-heading); }
+  .callout p { margin: 0; color: var(--text-muted); font-size: 14px; }
+
+  /* ── Kroki instrukcji ───────────────────────────────────────── */
+  .steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .step {
+    display: flex;
+    gap: 16px;
+    padding: 16px 4px;
+    border-bottom: 1px solid var(--card-border);
+  }
+  .step:last-child { border-bottom: none; }
+  .step .n {
+    flex-shrink: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: var(--bg-elevated);
+    border: 1px solid var(--card-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--primary);
+  }
+  .step h3 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .step p { margin: 0; color: var(--text-muted); font-size: 14px; }
+  .step code {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--card-border);
+    padding: 1px 6px;
+    border-radius: 6px;
+    color: var(--text);
+  }
+
+  /* ── Karta / przycisk pobierania ────────────────────────────── */
+  .download-card {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 22px;
+    border-radius: 18px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+  }
+  .download-card .meta p { margin: 0; }
+  .download-card .meta .label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .download-card .meta .file { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+    border-radius: 999px;
+    padding: 13px 24px;
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn-primary { background: var(--primary); color: var(--primary-text); }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--card-border); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .install-note { margin-top: 16px; font-size: 13px; color: var(--text-muted); }
+  .install-note summary { cursor: pointer; font-weight: 600; color: var(--text); }
+  .install-note ol { margin: 10px 0 0; padding-left: 20px; }
+  .install-note li { margin-bottom: 6px; }
+
+  /* ── Formularz ──────────────────────────────────────────────── */
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+  .field label { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+  .field .hint { font-size: 12px; color: var(--text-muted); opacity: 0.8; }
+  .field input[type="text"],
+  .field textarea,
+  .field select {
+    width: 100%;
+    padding: 11px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    background: var(--bg-elevated);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+  }
+  .field textarea { resize: vertical; min-height: 74px; }
+  .field input::placeholder, .field textarea::placeholder { color: var(--text-muted); opacity: 0.6; }
+  .field input:focus, .field textarea:focus, .field select:focus, .chip:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+  }
+
+  .chip-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    border: 1px solid var(--card-border);
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 13px;
+    font-family: var(--font-body);
+    cursor: pointer;
+  }
+  .chip.is-active { border-color: var(--primary); color: var(--primary); font-weight: 700; background: color-mix(in srgb, var(--primary) 12%, var(--bg-elevated)); }
+
+  .required::after { content: " *"; color: var(--secondary); }
+
+  .preview {
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    white-space: pre-wrap;
+    background: var(--bg-elevated);
+    border: 1px dashed var(--card-border);
+    border-radius: 12px;
+    padding: 14px;
+    color: var(--text-muted);
+    max-height: 220px;
+    overflow-y: auto;
+  }
+
+  .form-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+  .form-status { font-size: 13px; color: var(--verified); }
+  .form-status[hidden] { display: none; }
+
+  footer { padding: 30px 0 0; color: var(--text-muted); font-size: 12.5px; text-align: center; }
+</style>
+
+<div class="topbar">
+  <strong>🎾 Tennis Together — testerzy</strong>
+  <nav>
+    <a href="#instrukcja">Instrukcja</a>
+    <a href="#pobierz">Pobierz APK</a>
+    <a href="#zglos">Zgłoś błąd</a>
+  </nav>
+</div>
+
+<div class="wrap">
+  <div class="hero">
+    <span class="eyebrow">Test wewnętrzny · Akademia Tenisowa Zabrze</span>
+    <h1>Witaj w testach Tennis Together</h1>
+    <p class="lead">
+      Testujemy prototyp aplikacji do organizowania wspólnych wyjazdów na turnieje —
+      przejazdów, noclegów i zgłoszeń. Ta strona to wszystko, czego potrzebujesz:
+      instrukcja obsługi, link do najnowszej wersji i formularz na uwagi.
+    </p>
+  </div>
+
+  <section>
+    <div class="callout">
+      <span class="icon">⚠️</span>
+      <div>
+        <strong>Używaj wyłącznie danych fikcyjnych</strong>
+        <p>
+          To wczesny prototyp — regulamin i polityka prywatności jeszcze powstają.
+          Zakładając konto i dodając „zawodnika”, wpisuj testowe imię, nazwisko i rok
+          urodzenia — nie prawdziwe dane swojego dziecka. Nie używaj też prawdziwych
+          numerów kart czy adresów.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section id="instrukcja">
+    <div class="section-head"><span class="num">01</span><h2>Instrukcja krok po kroku</h2></div>
+    <ol class="steps">
+      <li class="step">
+        <div class="n">1</div>
+        <div>
+          <h3>Zainstaluj aplikację</h3>
+          <p>Pobierz plik APK niżej. Android zapyta o zgodę na instalację z „nieznanego źródła” — to normalne przy testach poza Sklepem Play, rozwiń instrukcję przy przycisku pobierania.</p>
+        </div>
+      </li>
+      <li class="step">
+        <div class="n">2</div>
+        <div>
+          <h3>Załóż konto</h3>
+          <p>Wybierz rolę (Rodzic / Opiekun / Trener) i podaj dowolny testowy e-mail i hasło. To osobne konto, niezależne od Twojej prawdziwej skrzynki.</p>
+        </div>
+      </li>
+      <li class="step">
+        <div class="n">3</div>
+        <div>
+          <h3>Dodaj fikcyjnego zawodnika</h3>
+          <p>W zakładce <code>Profil</code> → <code>Zawodnik</code> dodaj testowy profil: imię, nazwisko, rocznik, kategoria wiekowa.</p>
+        </div>
+      </li>
+      <li class="step">
+        <div class="n">4</div>
+        <div>
+          <h3>Zgłoś wyjazd na turniej</h3>
+          <p>W zakładce <code>Turnieje</code> wybierz dowolny turniej i kliknij „Jadę na ten turniej”. Możesz też poszukać turnieju po nazwisku zawodnika z bazy PZT.</p>
+        </div>
+      </li>
+      <li class="step">
+        <div class="n">5</div>
+        <div>
+          <h3>Sprawdź Przejazdy i Noclegi</h3>
+          <p>Dodaj ofertę („mam wolne miejsce”) albo poproś o dołączenie do cudzej. Zaakceptuj/odrzuć/zrezygnuj — sprawdź całą ścieżkę.</p>
+        </div>
+      </li>
+      <li class="step">
+        <div class="n">6</div>
+        <div>
+          <h3>Zajrzyj na Start i do Profilu</h3>
+          <p>Start pokazuje Twój najbliższy wyjazd i skróty. Trenerzy dodatkowo zobaczą tam i w zakładce <code>Klub</code> listę zawodników klubu.</p>
+        </div>
+      </li>
+      <li class="step">
+        <div class="n">7</div>
+        <div>
+          <h3>Zgłoś, co znajdziesz</h3>
+          <p>Coś nie działa, coś jest niejasne, masz pomysł na usprawnienie — wypełnij formularz na dole tej strony.</p>
+        </div>
+      </li>
+    </ol>
+  </section>
+
+  <section id="pobierz">
+    <div class="section-head"><span class="num">02</span><h2>Pobierz aplikację</h2></div>
+    <div class="download-card">
+      <div class="meta">
+        <p class="label">Android · plik testowy (debug)</p>
+        <p class="file">tennis-together-debug-latest.apk</p>
+      </div>
+      <a class="btn btn-primary" href="https://github.com/pmesznik/Tennis-Together/releases/download/debug-latest/tennis-together-debug-latest.apk">
+        ⬇️ Pobierz najnowszy APK
+      </a>
+    </div>
+    <details class="install-note">
+      <summary>Telefon blokuje instalację? Rozwiń instrukcję</summary>
+      <ol>
+        <li>Pobierz plik przez przeglądarkę na telefonie (link wyżej).</li>
+        <li>Po otwarciu pobranego pliku Android zapyta o zgodę na „instalację z nieznanego źródła” — zatwierdź.</li>
+        <li>Może pojawić się ostrzeżenie Google Play Protect, że aplikacja jest nierozpoznana — to normalne dla wersji testowej (nie jest jeszcze publikowana w Sklepie Play). Wybierz „Zainstaluj mimo to”.</li>
+        <li>Ten link zawsze prowadzi do najnowszej wersji — nie trzeba go zmieniać między testami.</li>
+      </ol>
+    </details>
+  </section>
+
+  <section id="zglos">
+    <div class="section-head"><span class="num">03</span><h2>Zgłoś błąd albo pomysł</h2></div>
+    <p style="color:var(--text-muted); font-size:14px; margin-top:-8px;">
+      Wypełnij pola, wybierz opcje klikając w kafelki, a na końcu wyślij e-mailem albo skopiuj
+      treść i wklej tam, gdzie już rozmawiacie o testach (np. grupa klubowa).
+    </p>
+
+    <form id="bugForm" onsubmit="return false;">
+      <div class="field">
+        <label class="required" for="f-name">Twoje imię / pseudonim</label>
+        <input type="text" id="f-name" placeholder="np. Kasia z klubu" />
+      </div>
+
+      <div class="field">
+        <label for="f-screen">Ekran / funkcja</label>
+        <select id="f-screen">
+          <option>Logowanie / rejestracja</option>
+          <option selected>Start</option>
+          <option>Turnieje</option>
+          <option>Przejazdy</option>
+          <option>Noclegi</option>
+          <option>Moje wyjazdy</option>
+          <option>Wiadomości</option>
+          <option>Profil</option>
+          <option>Klub (trener)</option>
+          <option>Instalacja aplikacji</option>
+          <option>Inne</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Typ zgłoszenia</label>
+        <div class="chip-row" data-group="type">
+          <button type="button" class="chip is-active" data-value="🐛 Błąd / crash">🐛 Błąd / crash</button>
+          <button type="button" class="chip" data-value="⚠️ Nie działa jak powinno">⚠️ Nie działa jak powinno</button>
+          <button type="button" class="chip" data-value="💡 Pomysł / sugestia">💡 Pomysł / sugestia</button>
+          <button type="button" class="chip" data-value="❓ Pytanie">❓ Pytanie</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Priorytet</label>
+        <div class="chip-row" data-group="priority">
+          <button type="button" class="chip" data-value="🔴 Krytyczny — nie da się korzystać">🔴 Krytyczny</button>
+          <button type="button" class="chip is-active" data-value="🟠 Poważny">🟠 Poważny</button>
+          <button type="button" class="chip" data-value="🟡 Drobny">🟡 Drobny</button>
+          <button type="button" class="chip" data-value="⚪ Kosmetyczny">⚪ Kosmetyczny</button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="f-version">Wersja APK (jeśli znasz)</label>
+        <input type="text" id="f-version" placeholder="np. debug-v27 — widoczna w nazwie pobranego pliku" />
+      </div>
+
+      <div class="field">
+        <label class="required" for="f-desc">Opis</label>
+        <textarea id="f-desc" placeholder="Co się stało? Czego się spodziewałaś/eś?"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="f-steps">Kroki do odtworzenia (opcjonalnie)</label>
+        <textarea id="f-steps" placeholder="1. Wchodzę w...&#10;2. Klikam...&#10;3. Widzę błąd"></textarea>
+      </div>
+
+      <div class="field">
+        <label>Podgląd zgłoszenia</label>
+        <div class="preview" id="preview"></div>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn btn-primary" id="btnMail">📧 Wyślij e-mailem</button>
+        <button type="button" class="btn btn-ghost" id="btnCopy">📋 Skopiuj treść</button>
+        <span class="form-status" id="formStatus" hidden></span>
+      </div>
+    </form>
+  </section>
+
+  <footer>Tennis Together — prototyp testowany wewnętrznie w ATZ. Dane na tej stronie nie są zbierane ani przechowywane przez samą stronę.</footer>
+</div>
+
+<script>
+  const state = { type: "🐛 Błąd / crash", priority: "🟠 Poważny" };
+
+  document.querySelectorAll(".chip-row").forEach((row) => {
+    const group = row.dataset.group;
+    row.querySelectorAll(".chip").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        row.querySelectorAll(".chip").forEach((c) => c.classList.remove("is-active"));
+        chip.classList.add("is-active");
+        state[group] = chip.dataset.value;
+        renderPreview();
+      });
+    });
+  });
+
+  const fields = ["f-name", "f-screen", "f-version", "f-desc", "f-steps"];
+  fields.forEach((id) => document.getElementById(id).addEventListener("input", renderPreview));
+  document.getElementById("f-screen").addEventListener("change", renderPreview);
+
+  function buildReport() {
+    const name = document.getElementById("f-name").value.trim() || "(nie podano)";
+    const screen = document.getElementById("f-screen").value;
+    const version = document.getElementById("f-version").value.trim() || "(nie podano)";
+    const desc = document.getElementById("f-desc").value.trim() || "(nie podano)";
+    const steps = document.getElementById("f-steps").value.trim();
+
+    let body = `Zgłoszenie testera — Tennis Together\n`;
+    body += `Tester: ${name}\n`;
+    body += `Ekran/funkcja: ${screen}\n`;
+    body += `Typ: ${state.type}\n`;
+    body += `Priorytet: ${state.priority}\n`;
+    body += `Wersja APK: ${version}\n\n`;
+    body += `Opis:\n${desc}\n`;
+    if (steps) body += `\nKroki do odtworzenia:\n${steps}\n`;
+    return body;
+  }
+
+  function renderPreview() {
+    document.getElementById("preview").textContent = buildReport();
+  }
+  renderPreview();
+
+  function showStatus(text) {
+    const el = document.getElementById("formStatus");
+    el.textContent = text;
+    el.hidden = false;
+    setTimeout(() => (el.hidden = true), 4000);
+  }
+
+  document.getElementById("btnMail").addEventListener("click", () => {
+    const screen = document.getElementById("f-screen").value;
+    const subject = encodeURIComponent(`[Tennis Together] ${state.type} — ${screen}`);
+    const body = encodeURIComponent(buildReport());
+    window.location.href = `mailto:pmesznik@gmail.com?subject=${subject}&body=${body}`;
+  });
+
+  document.getElementById("btnCopy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(buildReport());
+      showStatus("Skopiowano — wklej gdzie trzeba ✅");
+    } catch {
+      showStatus("Nie udało się skopiować — zaznacz i skopiuj podgląd ręcznie.");
+    }
+  });
+</script>
