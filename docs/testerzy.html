@@ -269,6 +269,29 @@
   .form-status[hidden] { display: none; }
 
   footer { padding: 30px 0 0; color: var(--text-muted); font-size: 12.5px; text-align: center; }
+
+  .report-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+  }
+  .report-item .row1 { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+  .report-item .row1 strong { font-family: var(--font-heading); }
+  .report-item .when { color: var(--text-muted); font-family: var(--font-mono); font-size: 11.5px; }
+  .report-item .desc { font-size: 13.5px; color: var(--text); }
+  .report-item .tags { display: flex; gap: 6px; flex-wrap: wrap; }
+  .report-item .tag {
+    font-size: 11.5px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--bg-elevated);
+    color: var(--text-muted);
+    border: 1px solid var(--card-border);
+  }
 </style>
 
 <div class="topbar">
@@ -277,6 +300,7 @@
     <a href="#instrukcja">Instrukcja</a>
     <a href="#pobierz">Pobierz APK</a>
     <a href="#zglos">Zgłoś błąd</a>
+    <a href="#lista-zgloszen">Zgłoszenia</a>
   </nav>
 </div>
 
@@ -386,8 +410,9 @@
   <section id="zglos">
     <div class="section-head"><span class="num">03</span><h2>Zgłoś błąd albo pomysł</h2></div>
     <p style="color:var(--text-muted); font-size:14px; margin-top:-8px;">
-      Wypełnij pola, wybierz opcje klikając w kafelki, a na końcu wyślij e-mailem albo skopiuj
-      treść i wklej tam, gdzie już rozmawiacie o testach (np. grupa klubowa).
+      Wypełnij pola, wybierz opcje klikając w kafelki i wyślij — zgłoszenie trafia od razu
+      do zespołu technicznego. Możesz też skopiować treść i wkleić tam, gdzie już rozmawiacie
+      o testach (np. grupa klubowa).
     </p>
 
     <form id="bugForm" onsubmit="return false;">
@@ -454,17 +479,36 @@
       </div>
 
       <div class="form-actions">
-        <button type="button" class="btn btn-primary" id="btnMail">📧 Wyślij e-mailem</button>
+        <button type="button" class="btn btn-primary" id="btnSend">📨 Wyślij zgłoszenie</button>
         <button type="button" class="btn btn-ghost" id="btnCopy">📋 Skopiuj treść</button>
         <span class="form-status" id="formStatus" hidden></span>
       </div>
     </form>
   </section>
 
-  <footer>Tennis Together — prototyp testowany wewnętrznie w ATZ. Dane na tej stronie nie są zbierane ani przechowywane przez samą stronę.</footer>
+  <section id="lista-zgloszen">
+    <div class="section-head"><span class="num">04</span><h2>Ostatnie zgłoszenia</h2></div>
+    <p style="color:var(--text-muted); font-size:14px; margin-top:-8px;">
+      Podgląd tego, co już zgłoszono — żeby nie duplikować.
+    </p>
+    <div id="reportsList" style="display:flex; flex-direction:column; gap:10px;">
+      <p style="color:var(--text-muted); font-size:13px;">Wczytywanie…</p>
+    </div>
+  </section>
+
+  <footer>Tennis Together — prototyp testowany wewnętrznie w ATZ. Zgłoszenia trafiają do bazy projektu (Supabase), widoczne dla zespołu technicznego.</footer>
 </div>
 
 <script>
+  // Ta sama baza (Supabase) co aplikacja Tennis Together — klucz "anon" jest
+  // z definicji publiczny (wpisany też w każdy build APK), bezpieczny do
+  // trzymania wprost w kodzie strony. Insert/select do `bug_reports`
+  // otwarte na anon (patrz supabase/migrations/0015_bug_reports.sql) —
+  // testerzy nie logują się przez Supabase Auth, formularz musi więc pisać
+  // anonimowo.
+  const SUPABASE_URL = "https://jrabxtiranllayerhutm.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_8-yxyMhoEEq-kHx2opU0Pg_QylogBur";
+
   const state = { type: "🐛 Błąd / crash", priority: "🟠 Poważny" };
 
   document.querySelectorAll(".chip-row").forEach((row) => {
@@ -483,21 +527,26 @@
   fields.forEach((id) => document.getElementById(id).addEventListener("input", renderPreview));
   document.getElementById("f-screen").addEventListener("change", renderPreview);
 
-  function buildReport() {
-    const name = document.getElementById("f-name").value.trim() || "(nie podano)";
-    const screen = document.getElementById("f-screen").value;
-    const version = document.getElementById("f-version").value.trim() || "(nie podano)";
-    const desc = document.getElementById("f-desc").value.trim() || "(nie podano)";
-    const steps = document.getElementById("f-steps").value.trim();
+  function readFields() {
+    return {
+      name: document.getElementById("f-name").value.trim(),
+      screen: document.getElementById("f-screen").value,
+      version: document.getElementById("f-version").value.trim(),
+      desc: document.getElementById("f-desc").value.trim(),
+      steps: document.getElementById("f-steps").value.trim(),
+    };
+  }
 
+  function buildReport() {
+    const f = readFields();
     let body = `Zgłoszenie testera — Tennis Together\n`;
-    body += `Tester: ${name}\n`;
-    body += `Ekran/funkcja: ${screen}\n`;
+    body += `Tester: ${f.name || "(nie podano)"}\n`;
+    body += `Ekran/funkcja: ${f.screen}\n`;
     body += `Typ: ${state.type}\n`;
     body += `Priorytet: ${state.priority}\n`;
-    body += `Wersja APK: ${version}\n\n`;
-    body += `Opis:\n${desc}\n`;
-    if (steps) body += `\nKroki do odtworzenia:\n${steps}\n`;
+    body += `Wersja APK: ${f.version || "(nie podano)"}\n\n`;
+    body += `Opis:\n${f.desc || "(nie podano)"}\n`;
+    if (f.steps) body += `\nKroki do odtworzenia:\n${f.steps}\n`;
     return body;
   }
 
@@ -510,14 +559,91 @@
     const el = document.getElementById("formStatus");
     el.textContent = text;
     el.hidden = false;
-    setTimeout(() => (el.hidden = true), 4000);
+    setTimeout(() => (el.hidden = true), 5000);
   }
 
-  document.getElementById("btnMail").addEventListener("click", () => {
-    const screen = document.getElementById("f-screen").value;
-    const subject = encodeURIComponent(`[Tennis Together] ${state.type} — ${screen}`);
-    const body = encodeURIComponent(buildReport());
-    window.location.href = `mailto:pmesznik@gmail.com?subject=${subject}&body=${body}`;
+  async function loadRecentReports() {
+    const list = document.getElementById("reportsList");
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/bug_reports?select=*&order=created_at.desc&limit=15`,
+        { headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` } }
+      );
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const rows = await res.json();
+      if (rows.length === 0) {
+        list.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">Jeszcze nic nie zgłoszono — bądź pierwszy/a.</p>';
+        return;
+      }
+      list.innerHTML = rows
+        .map((r) => {
+          const when = new Date(r.created_at).toLocaleString("pl-PL", {
+            day: "numeric", month: "short", hour: "2-digit", minute: "2-digit",
+          });
+          const esc = (s) => (s ?? "").replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+          return `
+            <div class="report-item">
+              <div class="row1">
+                <strong>${esc(r.tester_name) || "Anonimowy tester"}</strong>
+                <span class="when">${when}</span>
+              </div>
+              <div class="tags">
+                ${r.screen ? `<span class="tag">${esc(r.screen)}</span>` : ""}
+                ${r.report_type ? `<span class="tag">${esc(r.report_type)}</span>` : ""}
+                ${r.priority ? `<span class="tag">${esc(r.priority)}</span>` : ""}
+              </div>
+              <div class="desc">${esc(r.description)}</div>
+            </div>`;
+        })
+        .join("");
+    } catch {
+      list.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">Nie udało się wczytać listy zgłoszeń (spróbuj odświeżyć stronę).</p>';
+    }
+  }
+  loadRecentReports();
+
+  document.getElementById("btnSend").addEventListener("click", async () => {
+    const f = readFields();
+    if (!f.desc) {
+      showStatus("Uzupełnij pole „Opis” przed wysłaniem.");
+      return;
+    }
+    const btn = document.getElementById("btnSend");
+    btn.disabled = true;
+    btn.textContent = "Wysyłam…";
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/bug_reports`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+          "Content-Type": "application/json",
+          Prefer: "return=minimal",
+        },
+        body: JSON.stringify({
+          tester_name: f.name || null,
+          screen: f.screen,
+          report_type: state.type,
+          priority: state.priority,
+          apk_version: f.version || null,
+          description: f.desc,
+          steps: f.steps || null,
+        }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      showStatus("Wysłano — dzięki! ✅");
+      document.getElementById("f-name").value = "";
+      document.getElementById("f-version").value = "";
+      document.getElementById("f-desc").value = "";
+      document.getElementById("f-steps").value = "";
+      renderPreview();
+      loadRecentReports();
+    } catch {
+      showStatus("Nie udało się wysłać — spróbuj ponownie albo skopiuj treść niżej.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "📨 Wyślij zgłoszenie";
+    }
   });
 
   document.getElementById("btnCopy").addEventListener("click", async () => {
