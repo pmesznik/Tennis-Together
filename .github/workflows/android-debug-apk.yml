@@ -109,3 +109,26 @@ jobs:
           name: "Debug APK #${{ github.run_number }}"
           prerelease: true
           files: android/app/build/outputs/apk/debug/tennis-together-debug-v${{ github.run_number }}.apk
+
+      - name: Skopiuj pod stałą nazwą (dla linku "zawsze najnowszy")
+        # Strona dla testerów klubowych linkuje do STAŁEGO adresu, nie do
+        # numeru konkretnego buildu, żeby nie trzeba było ręcznie
+        # aktualizować linku po każdym pushu. Kopia pod niezmienną nazwą +
+        # niezmienny tag release'a (niżej) to załatwia.
+        run: |
+          cp "android/app/build/outputs/apk/debug/tennis-together-debug-v${{ github.run_number }}.apk" \
+             android/app/build/outputs/apk/debug/tennis-together-debug-latest.apk
+
+      - name: Publikuj/zaktualizuj release "zawsze najnowszy" (stały link)
+        # Ten sam tag za każdym razem (debug-latest) — action-gh-release
+        # aktualizuje istniejący release zamiast tworzyć nowy, więc adres
+        # .../releases/download/debug-latest/tennis-together-debug-latest.apk
+        # nigdy się nie zmienia, mimo że plik pod spodem jest za każdym razem
+        # świeży.
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: debug-latest
+          name: "Debug APK — zawsze najnowszy (obecnie #${{ github.run_number }})"
+          prerelease: true
+          body: "Automatycznie aktualizowany po każdym pushu na main. Ten konkretny build to #${{ github.run_number }} (commit ${{ github.sha }})."
+          files: android/app/build/outputs/apk/debug/tennis-together-debug-latest.apk
