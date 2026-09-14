@@ -39,15 +39,6 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Odtwórz google-services.json z sekretu (powiadomienia push)
-        # Plik jest w .gitignore (patrz .gitignore) — identyfikuje projekt
-        # Firebase, w publicznym repo trzymamy go poza kodem. Bez niego
-        # google-services plugin się nie włączy (patrz warunek w
-        # android/app/build.gradle) i APK zbuduje się normalnie, tylko bez
-        # działających powiadomień push.
-        if: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 != '' }}
-        run: echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android/app/google-services.json
-
       - name: Wygeneruj stały debug.keystore (jednorazowo, jeśli brak)
         # Bez tego każdy build CI ma inny, losowo wygenerowany klucz debug
         # (świeża maszyna GitHub Actions za każdym razem) — Android
