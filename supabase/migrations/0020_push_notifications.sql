@@ -16,7 +16,7 @@
 
 create extension if not exists pg_net;
 
-create table device_tokens (
+create table if not exists device_tokens (
   id uuid primary key default gen_random_uuid(),
   account_id uuid not null references accounts(id) on delete cascade,
   token text not null,
@@ -27,6 +27,7 @@ create table device_tokens (
 
 alter table device_tokens enable row level security;
 
+drop policy if exists "Właściciel zarządza swoimi tokenami urządzeń" on device_tokens;
 create policy "Właściciel zarządza swoimi tokenami urządzeń"
   on device_tokens for all
   to authenticated
@@ -55,10 +56,12 @@ begin
 end;
 $$;
 
+drop trigger if exists on_ride_offer_notify on ride_offers;
 create trigger on_ride_offer_notify
   after insert on ride_offers
   for each row execute function notify_new_offer('ride');
 
+drop trigger if exists on_lodging_offer_notify on lodging_offers;
 create trigger on_lodging_offer_notify
   after insert on lodging_offers
   for each row execute function notify_new_offer('lodging');
