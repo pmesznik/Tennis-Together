@@ -1,8 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase.js";
 import { useAuth } from "../lib/AuthContext.jsx";
 import ErrorBox from "../components/ErrorBox.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
+
+const SIGNUP_LIMIT_PER_HOUR = 2;
+
+// Ile prób rejestracji zapisano w ostatniej godzinie — patrz
+// 0023_signup_attempts.sql. Tylko przybliżenie prawdziwego limitu
+// wysyłki maili Supabase, ale wystarczające do ostrzeżenia w UI.
+async function countRecentSignupAttempts() {
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count } = await supabase
+    .from("signup_attempts")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", since);
+  return count ?? 0;
+}
 
 const ROLES = [
   { value: "parent", label: "Rodzic" },
@@ -103,6 +117,17 @@ function RegisterForm({ onDone }) {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [confirmNotice, setConfirmNotice] = useState(false);
+  const [attemptsThisHour, setAttemptsThisHour] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    countRecentSignupAttempts().then((n) => {
+      if (!cancelled) setAttemptsThisHour(n);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -114,6 +139,15 @@ function RegisterForm({ onDone }) {
     }
 
     setBusy(true);
+    // Log próby PRZED signUp — liczy się każda próba wysłania
+    // formularza, niezależnie czy signUp się powiedzie (patrz komentarz
+    // w 0023_signup_attempts.sql). Best-effort: brak awaryjnego
+    // przerywania rejestracji, jeśli akurat ten zapis się nie uda.
+    supabase
+      .from("signup_attempts")
+      .insert({})
+      .then(() => setAttemptsThisHour((n) => (n ?? 0) + 1));
+
     // Zapisujemy dane profilu PRZED signUp — jeśli projekt wymaga
     // potwierdzenia e-maila, sesja (i możliwość zapisu do `accounts`)
     // pojawi się dopiero po kliknięciu linku z maila, w zupełnie nowym
@@ -163,8 +197,30 @@ function RegisterForm({ onDone }) {
     );
   }
 
+  const limitReached = attemptsThisHour != null && attemptsThisHour >= SIGNUP_LIMIT_PER_HOUR;
+
   return (
     <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div
+        style={{
+          fontSize: 12.5,
+          color: "var(--color-text-muted)",
+          background: "var(--color-bg-elevated)",
+          border: "1px solid var(--color-card-border)",
+          borderRadius: 12,
+          padding: "10px 12px",
+        }}
+      >
+        🧪 Wczesna wersja beta — z powodu technicznego ograniczenia wysyłki maili można zakładać maks.{" "}
+        <strong>{SIGNUP_LIMIT_PER_HOUR} konta na godzinę</strong> (dla całej aplikacji, nie tylko Ciebie).
+        {attemptsThisHour != null && (
+          <>
+            {" "}
+            W tej godzinie: <strong>{Math.min(attemptsThisHour, SIGNUP_LIMIT_PER_HOUR)}/{SIGNUP_LIMIT_PER_HOUR}</strong>.
+          </>
+        )}{" "}
+        Jeśli nie dostaniesz maila potwierdzającego, odczekaj godzinę i spróbuj ponownie.
+      </div>
       <div>
         <label style={labelStyle}>Kim jesteś?</label>
         <div className="chip-row">
@@ -199,6 +255,11 @@ function RegisterForm({ onDone }) {
           onChange={(e) => setPassword(e.target.value)}
         />
       </div>
+      {limitReached && (
+        <p style={{ margin: 0, fontSize: 13, color: "var(--color-secondary)" }}>
+          Limit rejestracji na tę godzinę prawdopodobnie wyczerpany — możesz spróbować, ale mail może nie dojść.
+        </p>
+      )}
       {error && <ErrorBox>{error}</ErrorBox>}
       <button className="btn-primary" type="submit" disabled={busy}>
         {busy ? "Zakładam konto…" : "Załóż konto"}
@@ -209,6 +270,8 @@ function RegisterForm({ onDone }) {
 
 function translateAuthError(error) {
   const msg = error.message || "";
+  if (msg.toLowerCase().includes("rate limit"))
+    return `Osiągnięto limit ${SIGNUP_LIMIT_PER_HOUR} rejestracji na godzinę (wczesna wersja beta) — spróbuj ponownie za godzinę.`;
   if (msg.includes("Invalid login credentials")) return "Błędny e-mail lub hasło.";
   if (msg.includes("Email not confirmed"))
     return "Ten e-mail nie jest jeszcze potwierdzony — sprawdź skrzynkę i kliknij link, który wysłaliśmy przy rejestracji.";
