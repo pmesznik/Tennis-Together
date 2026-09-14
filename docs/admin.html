@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Panel administratora Tennis Together</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap');
+
+  :root {
+    --bg: #0d131e;
+    --bg-elevated: #121a28;
+    --card: rgba(22, 32, 50, 0.72);
+    --card-border: rgba(255, 255, 255, 0.09);
+    --text: #f4f6fb;
+    --text-muted: #9aa5b8;
+    --primary: #d4ff00;
+    --primary-text: #0d131e;
+    --secondary: #ff5e3a;
+    --verified: #10b981;
+    --font-heading: "Plus Jakarta Sans", system-ui, sans-serif;
+    --font-body: "Inter", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-body); line-height: 1.5; }
+  h1, h2, h3 { font-family: var(--font-heading); margin: 0; }
+  a { color: var(--primary); }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 0 20px 80px; }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    padding: 14px 20px;
+    background: rgba(13, 19, 30, 0.92);
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--card-border);
+  }
+  .topbar strong { font-family: var(--font-heading); font-size: 15px; }
+  .topbar nav { display: flex; gap: 4px; flex-wrap: wrap; }
+  .topbar nav a, .topbar nav button {
+    color: var(--text-muted); text-decoration: none; font-size: 13px; font-weight: 600;
+    padding: 6px 10px; border-radius: 999px; background: none; border: none; cursor: pointer; font-family: inherit;
+  }
+  .topbar nav a:hover, .topbar nav button:hover { color: var(--text); background: var(--bg-elevated); }
+
+  .login-screen {
+    min-height: calc(100vh - 60px); display: flex; align-items: center; justify-content: center; padding: 24px;
+  }
+  .login-card {
+    max-width: 340px; width: 100%; background: var(--card); border: 1px solid var(--card-border);
+    border-radius: 18px; padding: 28px; display: flex; flex-direction: column; gap: 12px;
+  }
+  .login-card h1 { font-size: 20px; margin-bottom: 4px; }
+
+  label { font-size: 13px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  input[type="email"], input[type="password"], input[type="text"] {
+    width: 100%; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--card-border);
+    background: var(--bg-elevated); color: var(--text); font-family: var(--font-body); font-size: 14px;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; border: none; border-radius: 999px;
+    padding: 10px 18px; font-family: var(--font-heading); font-weight: 700; font-size: 13px;
+    cursor: pointer; text-decoration: none; white-space: nowrap;
+  }
+  .btn-primary { background: var(--primary); color: var(--primary-text); }
+  .btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--card-border); }
+  .btn-danger { background: var(--secondary); color: #fff; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .error { color: var(--secondary); font-size: 13px; margin: 0; }
+
+  section { padding: 32px 0; border-top: 1px solid var(--card-border); }
+  section:first-of-type { border-top: none; padding-top: 24px; }
+  h2 { font-size: 18px; margin-bottom: 14px; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .stat-tile { background: var(--card); border: 1px solid var(--card-border); border-radius: 14px; padding: 16px; }
+  .stat-tile .n { font-family: var(--font-heading); font-size: 26px; font-weight: 800; }
+  .stat-tile .label { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .stat-tile.warn .n { color: var(--secondary); }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--card-border); vertical-align: middle; white-space: nowrap; }
+  th { color: var(--text-muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  td.wrap-text { white-space: normal; max-width: 320px; }
+
+  .pill { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 600; border-radius: 999px; padding: 3px 9px; }
+  .pill.ok { background: color-mix(in srgb, var(--verified) 16%, transparent); color: var(--verified); }
+  .pill.warn { background: color-mix(in srgb, var(--secondary) 16%, transparent); color: var(--secondary); }
+  .pill.muted { background: var(--bg-elevated); color: var(--text-muted); }
+
+  .toolbar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <strong>🎾 Tennis Together — panel administratora</strong>
+  <nav id="topnav" style="display:none;">
+    <a href="#dashboard">Dashboard</a>
+    <a href="#konta">Konta</a>
+    <a href="#zgloszenia">Zgłoszenia</a>
+    <a href="#bledy">Błędy testerów</a>
+    <button id="btnLogout">Wyloguj</button>
+  </nav>
+</div>
+
+<div id="loginScreen" class="login-screen">
+  <form id="loginForm" class="login-card">
+    <h1>Zaloguj się</h1>
+    <p style="margin:0; font-size:13px; color:var(--text-muted);">To samo konto co w aplikacji — musi mieć uprawnienia administratora.</p>
+    <div>
+      <label for="f-email">E-mail</label>
+      <input type="email" id="f-email" required />
+    </div>
+    <div>
+      <label for="f-password">Hasło</label>
+      <input type="password" id="f-password" required />
+    </div>
+    <p class="error" id="loginError" hidden></p>
+    <button class="btn btn-primary" type="submit" id="btnLogin">Zaloguj</button>
+  </form>
+</div>
+
+<div id="adminScreen" class="wrap" hidden>
+  <section id="dashboard">
+    <h2>Dashboard</h2>
+    <div class="stat-grid" id="statGrid">
+      <p style="color:var(--text-muted); font-size:13px;">Wczytywanie…</p>
+    </div>
+  </section>
+
+  <section id="konta">
+    <h2>Konta</h2>
+    <div class="toolbar">
+      <input type="text" id="accountSearch" placeholder="Szukaj po imieniu i nazwisku…" style="max-width:280px;" />
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Imię i nazwisko</th><th>Rola</th><th>Klub</th><th>Miasto</th><th>Status</th><th></th></tr>
+        </thead>
+        <tbody id="accountsBody"><tr><td colspan="6">Wczytywanie…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="zgloszenia">
+    <h2>Zgłoszenia użytkowników</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Zgłaszający</th><th>Zgłoszony</th><th>Powód</th><th>Status</th><th>Data</th><th></th></tr>
+        </thead>
+        <tbody id="reportsBody"><tr><td colspan="6">Wczytywanie…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="bledy">
+    <h2>Zgłoszenia błędów od testerów</h2>
+    <div class="toolbar">
+      <label style="display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-muted); font-weight:400;">
+        <input type="checkbox" id="hideResolved" checked style="width:auto;" />
+        Ukryj rozwiązane
+      </label>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Tester</th><th>Ekran</th><th>Typ</th><th>Priorytet</th><th>Opis</th><th>Data</th><th></th></tr>
+        </thead>
+        <tbody id="bugsBody"><tr><td colspan="7">Wczytywanie…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+
+<script>
+  const SUPABASE_URL = "https://jrabxtiranllayerhutm.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_8-yxyMhoEEq-kHx2opU0Pg_QylogBur";
+  const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  const loginScreen = document.getElementById("loginScreen");
+  const adminScreen = document.getElementById("adminScreen");
+  const topnav = document.getElementById("topnav");
+
+  function esc(s) {
+    return (s ?? "").toString().replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+  }
+
+  // ── Logowanie ────────────────────────────────────────────────────────────
+  document.getElementById("loginForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const email = document.getElementById("f-email").value.trim();
+    const password = document.getElementById("f-password").value;
+    const btn = document.getElementById("btnLogin");
+    const errEl = document.getElementById("loginError");
+    errEl.hidden = true;
+    btn.disabled = true;
+    btn.textContent = "Loguję…";
+    const { error } = await db.auth.signInWithPassword({ email, password });
+    btn.disabled = false;
+    btn.textContent = "Zaloguj";
+    if (error) {
+      errEl.textContent = "Błędny e-mail lub hasło.";
+      errEl.hidden = false;
+      return;
+    }
+    await tryEnterAdmin();
+  });
+
+  document.getElementById("btnLogout").addEventListener("click", async () => {
+    await db.auth.signOut();
+    location.reload();
+  });
+
+  async function tryEnterAdmin() {
+    // admin_stats() sama odmawia (raise exception), jeśli konto nie ma
+    // is_admin=true — to jednocześnie test uprawnień i pierwsze pobranie
+    // danych dashboardu, bez osobnego zapytania "czy jestem adminem".
+    const { data, error } = await db.rpc("admin_stats");
+    if (error) {
+      const errEl = document.getElementById("loginError");
+      errEl.textContent = "To konto nie ma uprawnień administratora.";
+      errEl.hidden = false;
+      await db.auth.signOut();
+      return;
+    }
+    loginScreen.hidden = true;
+    adminScreen.hidden = false;
+    topnav.style.display = "flex";
+    renderStats(data);
+    loadAccounts();
+    loadReports();
+    loadBugs();
+  }
+
+  // ── Dashboard ────────────────────────────────────────────────────────────
+  function renderStats(s) {
+    const tiles = [
+      { label: "Konta", value: s.accounts },
+      { label: "Zawodnicy", value: s.players },
+      { label: "Wyjazdy", value: s.trips },
+      { label: "Oferty przejazdów", value: s.ride_offers },
+      { label: "Oferty noclegów", value: s.lodging_offers },
+      { label: "Otwarte zgłoszenia", value: s.open_reports, warn: s.open_reports > 0 },
+      { label: "Nierozwiązane błędy", value: s.unresolved_bugs, warn: s.unresolved_bugs > 0 },
+      { label: "Zawieszone konta", value: s.suspended_accounts, warn: s.suspended_accounts > 0 },
+    ];
+    document.getElementById("statGrid").innerHTML = tiles
+      .map(
+        (t) => `<div class="stat-tile ${t.warn ? "warn" : ""}"><div class="n">${t.value}</div><div class="label">${t.label}</div></div>`
+      )
+      .join("");
+  }
+
+  // ── Konta ────────────────────────────────────────────────────────────────
+  let allAccounts = [];
+
+  async function loadAccounts() {
+    const { data, error } = await db
+      .from("accounts")
+      .select("id, full_name, role, club_name, city, status")
+      .order("full_name", { ascending: true });
+    if (error) {
+      document.getElementById("accountsBody").innerHTML = `<tr><td colspan="6">Błąd: ${esc(error.message)}</td></tr>`;
+      return;
+    }
+    allAccounts = data ?? [];
+    renderAccounts(allAccounts);
+  }
+
+  const ROLE_LABELS = { parent: "Rodzic", guardian: "Opiekun", coach: "Trener/klub", player_adult: "Zawodnik (16+)" };
+
+  function renderAccounts(rows) {
+    const body = document.getElementById("accountsBody");
+    if (rows.length === 0) {
+      body.innerHTML = `<tr><td colspan="6">Brak wyników.</td></tr>`;
+      return;
+    }
+    body.innerHTML = rows
+      .map((a) => {
+        const suspended = a.status === "suspended";
+        return `
+          <tr>
+            <td>${esc(a.full_name)}</td>
+            <td>${esc(ROLE_LABELS[a.role] ?? a.role)}</td>
+            <td>${esc(a.club_name) || "—"}</td>
+            <td>${esc(a.city) || "—"}</td>
+            <td><span class="pill ${suspended ? "warn" : "ok"}">${suspended ? "Zawieszone" : "Aktywne"}</span></td>
+            <td>
+              <button class="btn btn-ghost toggle-suspend" data-id="${a.id}" data-suspended="${suspended}">
+                ${suspended ? "Przywróć" : "Zawieś"}
+              </button>
+            </td>
+          </tr>`;
+      })
+      .join("");
+
+    body.querySelectorAll(".toggle-suspend").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const id = btn.dataset.id;
+        const isSuspended = btn.dataset.suspended === "true";
+        const newStatus = isSuspended ? "active" : "suspended";
+        if (!isSuspended && !confirm("Na pewno zawiesić to konto? Straci natychmiast dostęp do aplikacji.")) return;
+        btn.disabled = true;
+        const { error } = await db.from("accounts").update({ status: newStatus }).eq("id", id);
+        btn.disabled = false;
+        if (error) {
+          alert("Nie udało się zmienić statusu: " + error.message);
+          return;
+        }
+        loadAccounts();
+      });
+    });
+  }
+
+  document.getElementById("accountSearch").addEventListener("input", (e) => {
+    const q = e.target.value.trim().toLowerCase();
+    const filtered = q ? allAccounts.filter((a) => (a.full_name || "").toLowerCase().includes(q)) : allAccounts;
+    renderAccounts(filtered);
+  });
+
+  // ── Zgłoszenia użytkowników ──────────────────────────────────────────────
+  async function loadReports() {
+    const { data, error } = await db
+      .from("reports")
+      .select("id, reason, status, created_at, reporter:reporter_account_id(full_name), reported:reported_account_id(full_name)")
+      .order("created_at", { ascending: false });
+    const body = document.getElementById("reportsBody");
+    if (error) {
+      body.innerHTML = `<tr><td colspan="6">Błąd: ${esc(error.message)}</td></tr>`;
+      return;
+    }
+    if (!data || data.length === 0) {
+      body.innerHTML = `<tr><td colspan="6">Brak zgłoszeń.</td></tr>`;
+      return;
+    }
+    const STATUS_PILL = { open: "warn", reviewed: "muted", resolved: "ok" };
+    body.innerHTML = data
+      .map(
+        (r) => `
+        <tr>
+          <td>${esc(r.reporter?.full_name) || "—"}</td>
+          <td>${esc(r.reported?.full_name) || "—"}</td>
+          <td class="wrap-text">${esc(r.reason)}</td>
+          <td><span class="pill ${STATUS_PILL[r.status] ?? "muted"}">${esc(r.status)}</span></td>
+          <td>${new Date(r.created_at).toLocaleDateString("pl-PL")}</td>
+          <td>
+            ${
+              r.status !== "resolved"
+                ? `<button class="btn btn-ghost resolve-report" data-id="${r.id}">Oznacz jako rozpatrzone</button>`
+                : ""
+            }
+          </td>
+        </tr>`
+      )
+      .join("");
+
+    body.querySelectorAll(".resolve-report").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        const { error } = await db.from("reports").update({ status: "resolved" }).eq("id", btn.dataset.id);
+        if (error) alert("Błąd: " + error.message);
+        loadReports();
+      });
+    });
+  }
+
+  // ── Zgłoszenia błędów ────────────────────────────────────────────────────
+  async function loadBugs() {
+    const hideResolved = document.getElementById("hideResolved").checked;
+    let query = db.from("bug_reports").select("*").order("created_at", { ascending: false });
+    if (hideResolved) query = query.eq("resolved", false);
+    const { data, error } = await query;
+    const body = document.getElementById("bugsBody");
+    if (error) {
+      body.innerHTML = `<tr><td colspan="7">Błąd: ${esc(error.message)}</td></tr>`;
+      return;
+    }
+    if (!data || data.length === 0) {
+      body.innerHTML = `<tr><td colspan="7">Brak zgłoszeń.</td></tr>`;
+      return;
+    }
+    body.innerHTML = data
+      .map(
+        (b) => `
+        <tr>
+          <td>${esc(b.tester_name) || "Anonim"}</td>
+          <td>${esc(b.screen)}</td>
+          <td>${esc(b.report_type)}</td>
+          <td>${esc(b.priority)}</td>
+          <td class="wrap-text">${esc(b.description)}</td>
+          <td>${new Date(b.created_at).toLocaleDateString("pl-PL")}</td>
+          <td>
+            ${
+              b.resolved
+                ? `<span class="pill ok">Rozwiązane</span>`
+                : `<button class="btn btn-ghost resolve-bug" data-id="${b.id}">Oznacz jako rozwiązane</button>`
+            }
+          </td>
+        </tr>`
+      )
+      .join("");
+
+    body.querySelectorAll(".resolve-bug").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        const { error } = await db.from("bug_reports").update({ resolved: true }).eq("id", btn.dataset.id);
+        if (error) alert("Błąd: " + error.message);
+        loadBugs();
+      });
+    });
+  }
+
+  document.getElementById("hideResolved").addEventListener("change", loadBugs);
+
+  // ── Start: jeśli sesja już istnieje (odświeżenie strony), wejdź od razu ──
+  db.auth.getSession().then(({ data }) => {
+    if (data.session) tryEnterAdmin();
+  });
+</script>
+</body>
+</html>
