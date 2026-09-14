@@ -16,3 +16,7 @@ keystore.properties
 # musi być w repo, inaczej każdy build CI ma inny losowy klucz i Android
 # blokuje aktualizację "w miejscu" zamiast nadpisać starą wersję.
 !android/app/debug.keystore
+
+# Firebase (powiadomienia push, patrz supabase/functions/notify-tournament/README.md)
+# — identyfikuje konkretny projekt Firebase, w CI odtwarzany z sekretu.
+android/app/google-services.json

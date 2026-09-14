@@ -10,6 +10,7 @@ import ProfilePage from "./pages/ProfilePage.jsx";
 import ClubPage from "./pages/ClubPage.jsx";
 import AuthPage from "./pages/AuthPage.jsx";
 import { useAuth } from "./lib/AuthContext.jsx";
+import { usePushNotifications } from "./lib/usePushNotifications.js";
 
 // Szkielet głównego menu z dokumentu założeń (Start / Turnieje / Przejazdy /
 // Noclegi / Moje wyjazdy / Wiadomości / Profil). Każda zakładka na razie to
@@ -49,6 +50,9 @@ function useTheme() {
 export default function App() {
   const [theme, setTheme] = useTheme();
   const { session, loading, account, signOut } = useAuth();
+  // Rejestracja do powiadomień push — hook sam pilnuje, że nie robi nic
+  // bez zalogowanego konta i poza natywną apką (przeglądarka/PWA).
+  usePushNotifications(account?.id);
 
   if (loading) {
     return (
