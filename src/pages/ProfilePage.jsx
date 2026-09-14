@@ -6,6 +6,7 @@ import { verifyPztLogin } from "../lib/usePztPlayerSearch.js";
 import { supabase } from "../lib/supabase.js";
 import ErrorBox from "../components/ErrorBox.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
+import { APP_VERSION } from "../lib/appVersion.js";
 
 const ROLE_LABELS = {
   parent: "Rodzic",
@@ -36,6 +37,10 @@ export default function ProfilePage() {
       </div>
 
       {view === "parent" ? <ParentProfile /> : <PlayerSection />}
+
+      <p style={{ fontSize: 11, color: "var(--color-text-muted)", textAlign: "center", opacity: 0.6, margin: "8px 0 0" }}>
+        Tennis Together — wersja {APP_VERSION}
+      </p>
     </div>
   );
 }

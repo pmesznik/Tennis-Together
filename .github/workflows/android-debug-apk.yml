@@ -90,6 +90,10 @@ jobs:
           # konfiguracji w repo.
           VITE_SUPABASE_URL: https://jrabxtiranllayerhutm.supabase.co
           VITE_SUPABASE_ANON_KEY: sb_publishable_8-yxyMhoEEq-kHx2opU0Pg_QylogBur
+          # Ten sam numer co -PappVersionName niżej (Android), żeby wersja
+          # widoczna w apce (ekran logowania, profil) zgadzała się z tym,
+          # co Android pokazuje w Ustawieniach przy aplikacji.
+          VITE_APP_VERSION: 0.1.${{ github.run_number }}
         run: npm run build
 
       - name: Sync Capacitor → Android

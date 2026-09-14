@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase.js";
 import { useAuth } from "../lib/AuthContext.jsx";
 import ErrorBox from "../components/ErrorBox.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
+import { APP_VERSION } from "../lib/appVersion.js";
 
 const SIGNUP_LIMIT_PER_HOUR = 2;
 
@@ -63,6 +64,9 @@ export default function AuthPage() {
         <p style={{ fontSize: 11, color: "var(--color-text-muted)", textAlign: "center" }}>
           Konto zakłada tylko dorosły (rodzic/opiekun/trener) — patrz PLAN.md.
           Regulamin i polityka prywatności są w przygotowaniu.
+        </p>
+        <p style={{ fontSize: 11, color: "var(--color-text-muted)", textAlign: "center", opacity: 0.6 }}>
+          Wersja {APP_VERSION}
         </p>
       </div>
     </div>
