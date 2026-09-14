@@ -39,6 +39,9 @@ jobs:
           distribution: temurin
           java-version: '21'
 
+      - name: Test google-services
+        run: echo test
+
       - name: Wygeneruj stały debug.keystore (jednorazowo, jeśli brak)
         # Bez tego każdy build CI ma inny, losowo wygenerowany klucz debug
         # (świeża maszyna GitHub Actions za każdym razem) — Android
