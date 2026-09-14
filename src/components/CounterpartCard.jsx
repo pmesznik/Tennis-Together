@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "../lib/supabase.js";
+import StarRating from "./StarRating.jsx";
 
 // Pokazuje imię i (jeśli dodane) zdjęcie drugiej strony zaakceptowanego
 // przejazdu/noclegu — czysto pomocniczo, "żeby się rozpoznać", patrz
@@ -48,6 +49,7 @@ export default function CounterpartCard({ accountId }) {
       )}
       <span style={{ fontSize: 13, fontWeight: 600 }}>{profile.full_name ?? "Zawodnik"}</span>
       {profile.verified && <span title="Parent Verified">🛡️</span>}
+      <StarRating accountId={accountId} />
     </div>
   );
 }

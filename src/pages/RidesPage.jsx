@@ -8,6 +8,8 @@ import { useCityCoordinates, findCityCoords, haversineKm } from "../lib/useCityC
 import ErrorBox from "../components/ErrorBox.jsx";
 import MeetingConfirmation from "../components/MeetingConfirmation.jsx";
 import CounterpartCard from "../components/CounterpartCard.jsx";
+import RateMatchForm from "../components/RateMatchForm.jsx";
+import StarRating from "../components/StarRating.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
 
 const dateFormatter = new Intl.DateTimeFormat("pl-PL", { day: "numeric", month: "long" });
@@ -64,7 +66,7 @@ export default function RidesPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <h1>Przejazdy</h1>
 
-      <IncomingRequests joinRequests={joinRequests} />
+      <IncomingRequests joinRequests={joinRequests} account={account} />
 
       <div className="segmented">
         <button className={tab === "offers" ? "is-active" : ""} onClick={() => switchTab("offers")}>
@@ -135,7 +137,7 @@ export default function RidesPage() {
   );
 }
 
-function IncomingRequests({ joinRequests }) {
+function IncomingRequests({ joinRequests, account }) {
   const { incoming, respond } = joinRequests;
   const [busyId, setBusyId] = useState(null);
 
@@ -189,6 +191,14 @@ function IncomingRequests({ joinRequests }) {
               <>
                 <CounterpartCard accountId={r.requester_trip?.created_by_account_id} />
                 <MeetingConfirmation request={r} joinRequests={joinRequests} />
+                {r.meeting_confirmed_at && (
+                  <RateMatchForm
+                    joinRequestId={r.id}
+                    kind="ride"
+                    raterAccountId={account.id}
+                    ratedAccountId={r.requester_trip?.created_by_account_id}
+                  />
+                )}
               </>
             )}
           </div>
@@ -246,6 +256,7 @@ function OfferCard({ offer: r, account, trips, joinRequests }) {
 
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
         <span className="status-pill ok">{r.free_seats} wolne miejsca</span>
+        <StarRating accountId={r.trips?.created_by_account_id} />
         {r._distanceKm != null && (
           <span className="status-pill muted">📍 ~{Math.round(r._distanceKm)} km od Ciebie</span>
         )}
@@ -273,6 +284,14 @@ function OfferCard({ offer: r, account, trips, joinRequests }) {
                 {busy ? "Rezygnuję…" : "Zrezygnuj z przejazdu"}
               </button>
               <MeetingConfirmation request={myOutgoing} joinRequests={joinRequests} />
+              {myOutgoing.meeting_confirmed_at && (
+                <RateMatchForm
+                  joinRequestId={myOutgoing.id}
+                  kind="ride"
+                  raterAccountId={account.id}
+                  ratedAccountId={myOutgoing.ride_offers?.trips?.created_by_account_id}
+                />
+              )}
             </>
           )}
         </div>

@@ -7,6 +7,8 @@ import { useJoinRequests } from "../lib/useJoinRequests.js";
 import ErrorBox from "../components/ErrorBox.jsx";
 import MeetingConfirmation from "../components/MeetingConfirmation.jsx";
 import CounterpartCard from "../components/CounterpartCard.jsx";
+import RateMatchForm from "../components/RateMatchForm.jsx";
+import StarRating from "../components/StarRating.jsx";
 import { inputStyle, labelStyle } from "../components/formStyles.js";
 
 const KIND_LABELS = {
@@ -32,7 +34,7 @@ export default function LodgingPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <h1>Noclegi</h1>
 
-      <IncomingRequests joinRequests={joinRequests} />
+      <IncomingRequests joinRequests={joinRequests} account={account} />
 
       {error && <ErrorBox>Nie udało się wczytać ofert noclegowych: {error}</ErrorBox>}
       {loading && <p style={{ color: "var(--color-text-muted)" }}>Wczytywanie…</p>}
@@ -72,7 +74,7 @@ export default function LodgingPage() {
   );
 }
 
-function IncomingRequests({ joinRequests }) {
+function IncomingRequests({ joinRequests, account }) {
   const { incoming, respond } = joinRequests;
   const [busyId, setBusyId] = useState(null);
 
@@ -126,6 +128,14 @@ function IncomingRequests({ joinRequests }) {
               <>
                 <CounterpartCard accountId={r.requester_trip?.created_by_account_id} />
                 <MeetingConfirmation request={r} joinRequests={joinRequests} />
+                {r.meeting_confirmed_at && (
+                  <RateMatchForm
+                    joinRequestId={r.id}
+                    kind="lodging"
+                    raterAccountId={account.id}
+                    ratedAccountId={r.requester_trip?.created_by_account_id}
+                  />
+                )}
               </>
             )}
           </div>
@@ -180,6 +190,7 @@ function OfferCard({ offer: l, account, trips, joinRequests }) {
         {l.place_name || `${l.trips?.departure_city ?? "?"} · ${l.trips?.players?.first_name ?? "Zawodnik"}`}
       </p>
       <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+        <StarRating accountId={l.trips?.created_by_account_id} />
         {l.free_spots != null && <span className="status-pill ok">{l.free_spots} wolne miejsce</span>}
         {l.budget_per_night != null && <span className="status-pill muted">{l.budget_per_night} zł/os./noc</span>}
       </div>
@@ -205,6 +216,14 @@ function OfferCard({ offer: l, account, trips, joinRequests }) {
                 {busy ? "Rezygnuję…" : "Zrezygnuj z noclegu"}
               </button>
               <MeetingConfirmation request={myOutgoing} joinRequests={joinRequests} />
+              {myOutgoing.meeting_confirmed_at && (
+                <RateMatchForm
+                  joinRequestId={myOutgoing.id}
+                  kind="lodging"
+                  raterAccountId={account.id}
+                  ratedAccountId={myOutgoing.lodging_offers?.trips?.created_by_account_id}
+                />
+              )}
             </>
           )}
         </div>
