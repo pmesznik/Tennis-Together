@@ -39,9 +39,21 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Test google-services
-        if: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY != '' }}
-        run: echo test
+      - name: Odtwórz google-services.json z sekretu (powiadomienia push)
+        # Plik jest w .gitignore (patrz .gitignore) — identyfikuje projekt
+        # Firebase, w publicznym repo trzymamy go poza kodem. Bez niego
+        # google-services plugin się nie włączy (patrz warunek w
+        # android/app/build.gradle) i APK zbuduje się normalnie, tylko bez
+        # działających powiadomień push.
+        #
+        # UWAGA: `secrets` NIE jest dostępne bezpośrednio w warunku `if:`
+        # (błąd "Unrecognized named-value: 'secrets'", złapany na żywo) —
+        # trzeba go najpierw przepisać do zmiennej środowiskowej i dopiero
+        # w if: odwołać się do `env.*`.
+        env:
+          GOOGLE_SERVICES_JSON_BASE64: ${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}
+        if: ${{ env.GOOGLE_SERVICES_JSON_BASE64 != '' }}
+        run: echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 -d > android/app/google-services.json
 
       - name: Wygeneruj stały debug.keystore (jednorazowo, jeśli brak)
         # Bez tego każdy build CI ma inny, losowo wygenerowany klucz debug
