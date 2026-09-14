@@ -231,6 +231,11 @@
       await db.auth.signOut();
       return;
     }
+    // .login-screen ma we własnym CSS "display: flex" — sam atrybut
+    // hidden (który tylko dopisuje "display: none") przegrywa z tą
+    // regułą przy równej specyficzności, więc trzeba nadpisać display
+    // wprost, nie tylko przełączyć hidden.
+    loginScreen.style.display = "none";
     loginScreen.hidden = true;
     adminScreen.hidden = false;
     topnav.style.display = "flex";
